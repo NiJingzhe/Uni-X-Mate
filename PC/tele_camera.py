@@ -12,16 +12,11 @@ SUB_TOPIC_MOVE = 'robot/movement_state'
 PUB_TOPIC = 'robot/camera_frame'
 SUB_TOPIC_AI = 'ai/yolo_result'
 
-result_queue = Queue()
+result_list = []
    
 def on_message(client, userdata, msg):
     if msg.topic == SUB_TOPIC_AI:
         result_list = json.loads(msg.payload)["result"]
-        for result in result_list:
-            result_queue.put(result)
-            
-        if result_queue.qsize() > 50:
-            result_queue.get()
         
         print("result received!")
         
@@ -40,8 +35,7 @@ def tele_camera(target, width, height):
                 frame_sender.publish(PUB_TOPIC, response.content)
                 frame = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
                 if frame is not None:
-                    while not result_queue.empty():
-                        result = result_queue.get()
+                    for result in result_list:
                         x1, y1, x2, y2 = result["xyxy"]
                         x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
                         class_name = result["class_name"]

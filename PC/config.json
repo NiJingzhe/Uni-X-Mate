@@ -3,5 +3,5 @@
     "port" : 5000,
     "width" : 640,
     "height" : 480,
-    "model_pt" : "./yolov10.pt"
+    "model_path" : "./yolov10.pt"
 }

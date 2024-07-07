@@ -15,10 +15,11 @@ SUB_TOPIC_AI = 'ai/yolo_result'
 result_queue = Queue()
    
 def on_message(client, userdata, msg):
-    result_list = json.loads(msg.payload)["result"]
-    for result in result_list:
-        result_queue.put(result)
-    
+    if msg.topic == SUB_TOPIC_AI:
+        result_list = json.loads(msg.payload)["result"]
+        for result in result_list:
+            result_queue.put(result)
+        
 
 frame_sender = create_mqtt_client("图传MQTT", on_message=on_message, sub_topic=[SUB_TOPIC_MOVE, SUB_TOPIC_AI])
 

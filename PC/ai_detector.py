@@ -5,6 +5,7 @@ from ultralytics import YOLOv10
 from utils import *
 import json
 import keyboard
+import numpy as np
 
 SUB_TOPIC = "robot/camera_frame"
 PUB_TOPIC = "ai/yolo_result"
@@ -14,7 +15,8 @@ frame_queue = Queue()
 def on_message(client, userdata, msg):
     #print(msg.topic + " " + str(msg.payload))
     img = msg.payload
-    img = cv2.imdecode(img, cv2.IMREAD_COLOR)
+    img = cv2.imdecode(np.frombuffer(img, np.uint8), cv2.IMREAD_COLOR)
+    # turn img to numpy array
     frame_queue.put(img)
     if frame_queue.qsize() > 50:
         frame_queue.get()

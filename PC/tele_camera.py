@@ -18,10 +18,10 @@ def on_message(client, userdata, msg):
     if msg.topic == SUB_TOPIC_AI:
         result_list = json.loads(msg.payload)["result"]
         
-        print("===="*20)
-        print(result_list)
-        print("\n\n\nlen: ", len(result_list))
-        print("===="*20)
+        #print("===="*20)
+        #print(result_list)
+        #print("\n\n\nlen: ", len(result_list))
+        #print("===="*20)
         
         
 
@@ -44,6 +44,8 @@ def tele_camera(target, width, height):
                         x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
                         class_name = result["class_name"]
                         confidence = result["confidence"]
+
+                        print("xyxy: ", x1, y1, x2, y2, "class_name: ", class_name, "confidence: ", confidence)
                         
                         if confidence > 0.5:      
                             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)

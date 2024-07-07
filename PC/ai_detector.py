@@ -18,10 +18,10 @@ def on_message(client, userdata, msg):
     img = cv2.imdecode(np.frombuffer(img, np.uint8), cv2.IMREAD_COLOR)
     # turn img to numpy array
     frame_queue.put(img)
-    if frame_queue.qsize() > 50:
+    if frame_queue.qsize() > 500:
         frame_queue.get()
     
-    print("img received")
+    #print("img received")
 
 frame_reveiver_sender = create_mqtt_client(name="AI MQTT", on_message=on_message, sub_topic=SUB_TOPIC)
 
@@ -51,6 +51,8 @@ def ai_detect(model_path):
     except KeyboardInterrupt:
         print("AI检测线程终止。")
         exit(0)
+    except Exception as e:
+        print("AI检测线程异常终止。", e)
     finally:
         print("AI检测线程终止。")
         exit(0)

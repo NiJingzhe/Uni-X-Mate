@@ -14,6 +14,7 @@ frame_queue = Queue()
 def on_message(client, userdata, msg):
     #print(msg.topic + " " + str(msg.payload))
     img = msg.payload
+    img = cv2.imdecode(img, cv2.IMREAD_COLOR)
     frame_queue.put(img)
     if frame_queue.qsize() > 50:
         frame_queue.get()

@@ -64,6 +64,9 @@ def tele_camera(target, width, height):
         cv2.destroyAllWindows()
         print("图传线程终止。")
         exit(0)
+        
+    except Exception as e:
+        print(f"图传线程异常终止 : {e}")
     finally:
         cv2.destroyAllWindows()
         print("图传线程终止。")

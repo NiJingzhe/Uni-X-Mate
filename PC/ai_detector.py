@@ -35,12 +35,9 @@ def ai_detect(model_path):
                 for result in results:
                     result_dict = {}
                     for box in result.boxes:
-                        result_dict["xmin"] = box.xyxy[0][0].item()
-                        result_dict["ymin"] = box.xyxy[0][1].item()
-                        result_dict["xmax"] = box.xyxy[0][2].item()
-                        result_dict["ymax"] = box.xyxy[0][3].item()
+                        result_dict["xyxy"] = box.xyxy[0]
                         result_dict["confidence"] = box.conf[0].item()
-                        result_dict["class"] = box.cls[0].item()
+                        result_dict["class_name"] = model.names[box.cls[0].item()]
                     results_list.append(result_dict)
                         
                 frame_reveiver_sender.publish(PUB_TOPIC, json.dumps({"result":results_list}))

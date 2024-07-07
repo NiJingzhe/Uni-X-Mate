@@ -15,6 +15,8 @@ SUB_TOPIC_AI = 'ai/yolo_result'
 result_list = []
    
 def on_message(client, userdata, msg):
+    
+    global result_list
     if msg.topic == SUB_TOPIC_AI:
         result_list = json.loads(msg.payload)["result"]
         
@@ -29,6 +31,7 @@ frame_sender = create_mqtt_client("图传MQTT", on_message=on_message, sub_topic
 
 def tele_camera(target, width, height):
     global frame_sender
+    global result_list
     
     host = target
     try:

@@ -18,7 +18,11 @@ def on_message(client, userdata, msg):
     if msg.topic == SUB_TOPIC_AI:
         result_list = json.loads(msg.payload)["result"]
         
-        print("result received!")
+        print("===="*20)
+        print(result_list)
+        print("\n\n\nlen: ", len(result_list))
+        print("===="*20)
+        
         
 
 frame_sender = create_mqtt_client("图传MQTT", on_message=on_message, sub_topic=[SUB_TOPIC_MOVE, SUB_TOPIC_AI])

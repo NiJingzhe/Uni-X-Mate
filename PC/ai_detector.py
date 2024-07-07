@@ -18,7 +18,7 @@ def on_message(client, userdata, msg):
     img = cv2.imdecode(np.frombuffer(img, np.uint8), cv2.IMREAD_COLOR)
     # turn img to numpy array
     frame_queue.put(img)
-    if frame_queue.qsize() > 500:
+    if frame_queue.qsize() > 50:
         frame_queue.get()
     
     #print("img received")

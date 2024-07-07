@@ -19,6 +19,9 @@ def on_message(client, userdata, msg):
         result_list = json.loads(msg.payload)["result"]
         for result in result_list:
             result_queue.put(result)
+            
+        if result_queue.qsize() > 50:
+            result_queue.get()
         
         print("result received!")
         

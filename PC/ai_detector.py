@@ -44,7 +44,7 @@ def ai_detect(model_path):
                         x1, y1, x2, y2 = box.xyxy[0]
                         x1, y1, x2, y2 = int(x1.item()), int(y1.item()), int(x2.item()), int(y2.item())
                         result_dict["xyxy"] = (x1, y1, x2, y2)
-                        result_dict["confidence"] = int(box.conf[0].item())
+                        result_dict["confidence"] = float(box.conf[0].item())
                         result_dict["class_name"] = model.names[int(box.cls[0].item())]
                     results_list.append(result_dict)
                         

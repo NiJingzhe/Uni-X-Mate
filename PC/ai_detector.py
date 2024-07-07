@@ -15,7 +15,10 @@ def on_message(client, userdata, msg):
     #print(msg.topic + " " + str(msg.payload))
     img = msg.payload
     frame_queue.put(img)
+    if frame_queue.qsize() > 50:
+        frame_queue.get()
     
+    print("img received")
 
 frame_reveiver_sender = create_mqtt_client(name="AI MQTT", on_message=on_message, sub_topic=SUB_TOPIC)
 
@@ -24,7 +27,7 @@ def ai_detect(model_path):
     model = YOLOv10(model_path)
     # 检查是否有可用的GPU
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model.to_device(device)
+    model.to(device)
     
     try:
         while not keyboard.is_pressed("p"):

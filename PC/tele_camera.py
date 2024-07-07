@@ -20,6 +20,8 @@ def on_message(client, userdata, msg):
         for result in result_list:
             result_queue.put(result)
         
+        print("result received!")
+        
 
 frame_sender = create_mqtt_client("图传MQTT", on_message=on_message, sub_topic=[SUB_TOPIC_MOVE, SUB_TOPIC_AI])
 
@@ -52,6 +54,7 @@ def tele_camera(target, width, height):
                         cv2.destroyAllWindows()
                         break
     except KeyboardInterrupt:
+        
         cv2.destroyAllWindows()
         print("图传线程终止。")
         exit(0)

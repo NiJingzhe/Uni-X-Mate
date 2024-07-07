@@ -6,24 +6,30 @@ import numpy as np
 import cv2
 import keyboard
 import os
+from queue import Queue
 
 SUB_TOPIC_MOVE = 'robot/movement_state'
 PUB_TOPIC = 'robot/camera_frame'
 SUB_TOPIC_AI = 'ai/yolo_result'
 
+result_queue = Queue()
+   
 def on_message(client, userdata, msg):
-    print(msg.topic + " " + str(msg.payload))
-    playload = json.loads(str(msg.payload))
+    result_dict = json.loads(msg.payload)
+    
+
+frame_sender = create_mqtt_client("图传MQTT", on_message=on_message, sub_topic=[SUB_TOPIC_MOVE, SUB_TOPIC_AI])
 
 def tele_camera(target, width, height):
+    global frame_sender
+    
     host = target
-    client = create_mqtt_client("图传MQTT", on_message=on_message, sub_topic=[SUB_TOPIC_MOVE, SUB_TOPIC_AI])
     try:
         while not keyboard.is_pressed("p"):  
             response = send_post_request("http://" + host + "/video", {'width': width, 'height': height})
             if response is not None and response.headers['Content-Type'] == 'image/jpeg':
                 image_data = np.frombuffer(response.content, np.uint8)
-                client.publish(PUB_TOPIC, response.content)
+                frame_sender.publish(PUB_TOPIC, response.content)
                 frame = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
                 if frame is not None:
                     cv2.imshow("Tele Camera", frame)

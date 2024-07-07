@@ -1,6 +1,7 @@
 # main.py
 from remote_controller import remote_control
 from tele_camera import tele_camera
+from ai_detector import ai_detect
 import threading
 import os
 import json
@@ -15,13 +16,15 @@ def main():
     # Correct argument passing as a tuple
     remote_control_thread = threading.Thread(target=remote_control, args=(target,))
     tele_camera_thread = threading.Thread(target=tele_camera, args=(target, config["width"], config["height"],))
+    ai_detect_thread = threading.Thread(target=ai_detect)
     
     remote_control_thread.start()
     tele_camera_thread.start()
+    ai_detect.start()
     
     remote_control_thread.join()
     tele_camera_thread.join()
-    
+    tele_camera_thread.join()
         
     
 if __name__ == "__main__":

@@ -6,6 +6,8 @@ import os
 
 PUB_TOPIC = "robot/movement_state"
 
+movement_state_sender = create_mqtt_client("遥控器MQTT")
+
 def get_key_state():
     forward_back = 0
     left_right = 0
@@ -23,8 +25,10 @@ def get_key_state():
     return forward_back, left_right
 
 def remote_control(target):
+    
+    global movement_state_sender
+    
     host = target
-    movement_state_sender = create_mqtt_client("遥控器MQTT")
     print("遥控器已启动")
     try:
         while not keyboard.is_pressed("p"):

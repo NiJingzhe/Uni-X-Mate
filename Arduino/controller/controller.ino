@@ -153,6 +153,10 @@ void Process_Command() {
       Serial.println("Unknown command received");
       break;
   }
+
+  // command_data.imm_stop_flag = false;
+  // command_data.forward_back = 0;
+  // command_data.left_right = 0;
 }
 
 // 获取传感器数据

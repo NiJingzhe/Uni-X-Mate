@@ -1,13 +1,6 @@
-from flask import Flask, render_template, Response, request, send_from_directory
+from flask import Flask, Response, request
 from camera import VideoCamera
-from piserial import piSerial
-import os
-from enum import Enum
-import json
-import struct
-from flask import Flask, request, jsonify
-import signal
-import serial
+from flask import Flask, request
 
 CAMERA_ENABLE = True
 #SERIAL_ENABLE = True

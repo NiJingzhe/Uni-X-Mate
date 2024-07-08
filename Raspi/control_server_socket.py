@@ -39,7 +39,19 @@ def handle_client_connection(client_socket):
                 break
             
             # Parse the message
-            forward_back, left_right = map(int, message.strip().split(','))
+            if "w" in message:
+                forward_back = 1
+            elif "s" in message:
+                forward_back = -1
+            else:
+                forward_back = 0
+            
+            if "a" in message:
+                left_right = -1
+            elif "d" in message:
+                left_right = 1
+            else:
+                left_right = 0
 
             # Build command byte stream
             command_byte = COMMANDS.MOVE.value.to_bytes(1, 'big')
@@ -49,8 +61,11 @@ def handle_client_connection(client_socket):
 
             try:
                 if SERIAL_ENABLE:
+                    #pi_serial = piSerial(SERIAL_PORT, SERIAL_BAUDRATE)
                     pi_serial.write(command_stream_bytes)
+                    pi_serial.reset_input_buffer()
                     feed_back = pi_serial.readline().decode().strip()
+                    #pi_serial.close()
                     client_socket.sendall(feed_back.encode('utf-8'))
                 else:
                     client_socket.sendall(b"Serial not enabled")

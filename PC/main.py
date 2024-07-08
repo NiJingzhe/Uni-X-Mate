@@ -1,12 +1,10 @@
 from remote_controller import remote_control
 from tele_camera import tele_camera
-from remote_control_socket import remote_control_socket
+#from remote_control_socket import remote_control_socket
 from ai_detector import ai_detect
 import multiprocessing
-import os
 import json
 import keyboard
-from queue import Queue
 
 # 使用 multiprocessing 的 Queue
 g_frame_queue = multiprocessing.Queue()
@@ -20,8 +18,8 @@ def main():
     control_target = config["ip"] + ":" + str(config["control_port"])
 
     # 进程取代线程
-    #remote_control_process = multiprocessing.Process(target=remote_control, args=(control_target, g_movement_info_queue,))
-    remote_control_process = multiprocessing.Process(target=remote_control_socket, args=(config["ip"],config["control_port"],g_movement_info_queue,))
+    remote_control_process = multiprocessing.Process(target=remote_control, args=(control_target, g_movement_info_queue,))
+    #remote_control_process = multiprocessing.Process(target=remote_control_socket, args=(config["ip"],config["control_port"],g_movement_info_queue,))
     tele_camera_process = multiprocessing.Process(target=tele_camera, args=(video_target, config["width"],
                                                                             config["height"],
                                                                             g_frame_queue, g_result_queue,))
@@ -45,12 +43,12 @@ def main():
     # 程序结束时终止所有进程
     remote_control_process.terminate()
     tele_camera_process.terminate()
-    #ai_detect_process.terminate()
+    ai_detect_process.terminate()
 
     # 等待进程终止
     remote_control_process.join()
     tele_camera_process.join()
-    #ai_detect_process.join()
+    ai_detect_process.join()
 
     print("Program terminated.")
 

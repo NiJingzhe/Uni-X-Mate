@@ -1,12 +1,9 @@
 from flask import Flask, render_template, Response, request, send_from_directory
 from camera import VideoCamera
 from piserial import piSerial
-import os
 from enum import Enum
-import json
 import struct
 from flask import Flask, request, jsonify
-import signal
 import serial
 
 #CAMERA_ENABLE = True
@@ -51,17 +48,14 @@ def move_control():
     command_stream_bytes = command_byte + forward_back_byte + left_right_byte
 
     try:
-        pi_serial = piSerial('/dev/ttyACM0', 9600)
-
         # 发送命令字节流到Arduino
         pi_serial.write(command_stream_bytes)
         #print("to serial : ", command_stream_bytes)
 
         # 读取反馈
+        pi_serial.reset_input_buffer()
         feed_back = pi_serial.readline().decode().strip()
         #print("from serial: ", feed_back)
-
-        pi_serial.close()
 
         return jsonify({'feedback': feed_back})
 

@@ -18,3 +18,6 @@ class piSerial:
 
     def close(self):
         self.ser.close()    
+        
+    def reset_input_buffer(self):
+        self.ser.reset_input_buffer()

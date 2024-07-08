@@ -1,4 +1,3 @@
-import cv2
 import torch
 from ultralytics import YOLOv10
 import keyboard
@@ -14,7 +13,6 @@ def ai_detect(model_path, frame_queue, result_queue):
             while not frame_queue.empty():
                 frame = frame_queue.get()
                 results = model(frame, device = device)
-                results_list = []
                 for result in results:
                     result_dict = {}
                     for box in result.boxes:

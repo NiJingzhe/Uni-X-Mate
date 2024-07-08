@@ -37,6 +37,8 @@ volatile bool g_is_measurement_done_front = false;  // 测距完成标志
 volatile bool g_is_measurement_done_back = false;  // 测距完成标志
 volatile bool g_is_measurement_done_left = false;  // 测距完成标志
 volatile bool g_is_measurement_done_right = false;  // 测距完成标志
+unsigned long g_imm_stop_start_time = 0;
+bool g_is_imm_stop_active = false;
 // 全局单例以及全局变量
 
 // Command info 命令信息
@@ -265,13 +267,71 @@ void Feed_Back() {
 /*==================================== Motor Control Part =======================================*/
 // 控制电机速度和方向
 void Control_Motors() {
+  if (command_data.imm_stop_flag && !g_is_imm_stop_active) {
+    // 如果紧急停止标志为真并且没有激活紧急停止，立即反转马达并记录开始时间
+    Motor_LB.setSpeed(abs(movement_state.l_motor_speed));
+    Motor_LF.setSpeed(abs(movement_state.l_motor_speed));
+    Motor_RB.setSpeed(abs(movement_state.r_motor_speed));
+    Motor_RF.setSpeed(abs(movement_state.r_motor_speed));
+
+    // 反转当前马达的方向
+    if (movement_state.l_motor_speed > 0) {
+      Motor_LB.run(BACKWARD);
+      Motor_LF.run(BACKWARD);
+    } else {
+      Motor_LB.run(FORWARD);
+      Motor_LF.run(FORWARD);
+    }
+
+    if (movement_state.r_motor_speed < 0) {
+      Motor_RB.run(BACKWARD);
+      Motor_RF.run(BACKWARD);
+    } else {
+      Motor_RB.run(FORWARD);
+      Motor_RF.run(FORWARD);
+    }
+
+    // 设置反转后的速度
+    movement_state.l_motor_speed = -movement_state.l_motor_speed;
+    movement_state.r_motor_speed = -movement_state.r_motor_speed;
+
+    g_imm_stop_start_time = millis();
+    g_is_imm_stop_active = true;
+
+    return;
+  }
+
+  if (g_is_imm_stop_active) {
+    // 检查是否已经后退了半秒
+    if (millis() - g_imm_stop_start_time >= 500) {
+      // 停止所有马达
+      Motor_LB.setSpeed(0);
+      Motor_LF.setSpeed(0);
+      Motor_RB.setSpeed(0);
+      Motor_RF.setSpeed(0);
+
+      Motor_LB.run(RELEASE);
+      Motor_LF.run(RELEASE);
+      Motor_RB.run(RELEASE);
+      Motor_RF.run(RELEASE);
+
+      // 清空紧急停止标志
+      command_data.imm_stop_flag = false;
+      g_is_imm_stop_active = false;
+
+      movement_state.l_motor_speed = 0;
+      movement_state.r_motor_speed = 0;
+    }
+    return;
+  }
+
   if (command_data.left_right == 0) {
     movement_state.l_motor_speed = WHEEL_MAX_SPEED * (command_data.forward_back * 1.2);
     movement_state.r_motor_speed = WHEEL_MAX_SPEED * (command_data.forward_back * 1.2);
   }
   else if (command_data.forward_back == 0) {
-    movement_state.l_motor_speed = WHEEL_MAX_SPEED * (command_data.left_right * -1.2);
-    movement_state.r_motor_speed = WHEEL_MAX_SPEED * (command_data.left_right * 1.2);
+    movement_state.l_motor_speed = WHEEL_MAX_SPEED * (command_data.left_right);
+    movement_state.r_motor_speed = WHEEL_MAX_SPEED * (command_data.left_right);
   }
   else {
     movement_state.l_motor_speed = WHEEL_MAX_SPEED * (command_data.forward_back - command_data.left_right);
@@ -298,8 +358,8 @@ void Control_Motors() {
     Motor_RB.run(FORWARD);
     Motor_RF.run(FORWARD);
   }
-
 }
+
 /*==================================== Ultrasonic Part =======================================*/
 
 

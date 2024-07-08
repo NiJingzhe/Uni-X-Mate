@@ -266,8 +266,12 @@ void Feed_Back() {
 // 控制电机速度和方向
 void Control_Motors() {
   if (command_data.left_right == 0) {
-    movement_state.l_motor_speed = WHEEL_MAX_SPEED * (command_data.forward_back * 2);
-    movement_state.r_motor_speed = WHEEL_MAX_SPEED * (command_data.forward_back * 2);
+    movement_state.l_motor_speed = WHEEL_MAX_SPEED * (command_data.forward_back * 1.2);
+    movement_state.r_motor_speed = WHEEL_MAX_SPEED * (command_data.forward_back * 1.2);
+  }
+  else if (command_data.forward_back == 0) {
+    movement_state.l_motor_speed = WHEEL_MAX_SPEED * (command_data.left_right * -1.2);
+    movement_state.r_motor_speed = WHEEL_MAX_SPEED * (command_data.left_right * 1.2);
   }
   else {
     movement_state.l_motor_speed = WHEEL_MAX_SPEED * (command_data.forward_back - command_data.left_right);

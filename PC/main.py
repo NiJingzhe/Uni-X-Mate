@@ -20,21 +20,22 @@ def main():
     control_target = config["ip"] + ":" + str(config["control_port"])
 
     # 进程取代线程
-    remote_control_process = multiprocessing.Process(target=remote_control_socket, args=(config["ip"],int(config["control_port"]), g_movement_info_queue,))
+    #remote_control_process = multiprocessing.Process(target=remote_control, args=(control_target, g_movement_info_queue,))
+    remote_control_process = multiprocessing.Process(target=remote_control_socket, args=(config["ip"],config["control_port"],g_movement_info_queue,))
     tele_camera_process = multiprocessing.Process(target=tele_camera, args=(video_target, config["width"],
                                                                             config["height"],
                                                                             g_frame_queue, g_result_queue,))
-    #ai_detect_process = multiprocessing.Process(target=ai_detect, args=(config["model_path"],
-                                                                        #g_frame_queue, g_result_queue,))
+    ai_detect_process = multiprocessing.Process(target=ai_detect, args=(config["model_path"],
+                                                                        g_frame_queue, g_result_queue,))
 
     # 将进程设置为守护进程
     remote_control_process.daemon = True
     tele_camera_process.daemon = True
-    #ai_detect_process.daemon = True
+    ai_detect_process.daemon = True
 
     remote_control_process.start()
     tele_camera_process.start()
-    #ai_detect_process.start()
+    ai_detect_process.start()
 
     print("Press 'p' to terminate the program.")
 

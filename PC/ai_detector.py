@@ -7,25 +7,12 @@ import json
 import keyboard
 import numpy as np
 
-SUB_TOPIC = "robot/camera_frame"
+
 PUB_TOPIC = "ai/yolo_result"
 
-frame_queue = Queue()
+frame_reveiver_sender = create_mqtt_client(name="AI MQTT")
 
-def on_message(client, userdata, msg):
-    #print(msg.topic + " " + str(msg.payload))
-    img = msg.payload
-    img = cv2.imdecode(np.frombuffer(img, np.uint8), cv2.IMREAD_COLOR)
-    # turn img to numpy array
-    frame_queue.put(img)
-    if frame_queue.qsize() > 50:
-        frame_queue.get()
-    
-    #print("img received")
-
-frame_reveiver_sender = create_mqtt_client(name="AI MQTT", on_message=on_message, sub_topic=SUB_TOPIC)
-
-def ai_detect(model_path):
+def ai_detect(model_path, frame_queue):
     
     model = YOLOv10(model_path)
     # 检查是否有可用的GPU

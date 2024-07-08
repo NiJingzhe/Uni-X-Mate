@@ -1,18 +1,8 @@
 import cv2
 import torch
-from queue import Queue
 from ultralytics import YOLOv10
-from utils import *
-import json
 import keyboard
-import numpy as np
-
-
-PUB_TOPIC = "ai/yolo_result"
-
-frame_reveiver_sender = create_mqtt_client(name="AI MQTT")
-
-def ai_detect(model_path, frame_queue):
+def ai_detect(model_path, frame_queue, result_queue):
     
     model = YOLOv10(model_path)
     # 检查是否有可用的GPU
@@ -22,9 +12,12 @@ def ai_detect(model_path, frame_queue):
     try:
         while not keyboard.is_pressed("p"):
             while not frame_queue.empty():
+                #print("detecting...")
                 frame = frame_queue.get()
+                #print(frame)
                 results = model(frame, device = device)
                 results_list = []
+                #print("detect finished", results)
                 for result in results:
                     result_dict = {}
                     for box in result.boxes:
@@ -33,9 +26,9 @@ def ai_detect(model_path, frame_queue):
                         result_dict["xyxy"] = (x1, y1, x2, y2)
                         result_dict["confidence"] = float(box.conf[0].item())
                         result_dict["class_name"] = model.names[int(box.cls[0].item())]
-                    results_list.append(result_dict)
-                        
-                frame_reveiver_sender.publish(PUB_TOPIC, json.dumps({"result":results_list}))
+                    result_queue.put(result_dict)
+                    if result_queue.qsize() > 10:
+                        result_queue.get()
                 
     except KeyboardInterrupt:
         print("AI检测线程终止。")

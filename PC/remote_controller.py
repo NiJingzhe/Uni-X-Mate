@@ -1,12 +1,6 @@
 # remote_control.py
 import keyboard
-import paho.mqtt.client as mqtt
-from utils import create_mqtt_client, send_post_request
-import os
-
-PUB_TOPIC = "robot/movement_state"
-
-movement_state_sender = create_mqtt_client("遥控器MQTT")
+from utils import *
 
 def get_key_state():
     forward_back = 0
@@ -24,20 +18,19 @@ def get_key_state():
         
     return forward_back, left_right
 
-def remote_control(target):
-    
-    global movement_state_sender
-    
+def remote_control(target, movement_info_queue):
+
     host = target
     print("遥控器已启动")
     try:
         while not keyboard.is_pressed("p"):
             forward_back, left_right = get_key_state()
-            #print(f"forward is : {forward_back}, left is : {left_right}")
             # 发送运动控制指令
             response = send_post_request("http://" + host + "/move", {"forward_back": forward_back, "left_right": left_right})
             movement_state = response.json()["movement_state"]
-            movement_state_sender.publish(PUB_TOPIC, movement_state)
+            movement_info_queue.put(movement_state)
+            if movement_info_queue.qsize() > 100:
+                movement_info_queue.get()
     except KeyboardInterrupt:
         print("遥控器已停止。")
         exit(0)

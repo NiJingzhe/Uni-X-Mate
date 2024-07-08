@@ -19,7 +19,7 @@ def get_key_state():
         
     return forward_back, left_right
 
-def remote_control(target_ip, target_port, movement_info_queue):
+def remote_control_socket(target_ip, target_port, movement_info_queue):
     host = target_ip
     port = target_port
     print("遥控器已启动")

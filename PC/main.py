@@ -1,5 +1,6 @@
 from remote_controller import remote_control
 from tele_camera import tele_camera
+from remote_control_socket import remote_control_socket
 from ai_detector import ai_detect
 import multiprocessing
 import os
@@ -19,7 +20,7 @@ def main():
     control_target = config["ip"] + ":" + str(config["control_port"])
 
     # 进程取代线程
-    remote_control_process = multiprocessing.Process(target=remote_control, args=(control_target, g_movement_info_queue,))
+    remote_control_process = multiprocessing.Process(target=remote_control_socket, args=(config["ip"],int(config["control_port"]), g_movement_info_queue,))
     tele_camera_process = multiprocessing.Process(target=tele_camera, args=(video_target, config["width"],
                                                                             config["height"],
                                                                             g_frame_queue, g_result_queue,))

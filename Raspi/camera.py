@@ -1,3 +1,4 @@
+import cv2
 import cv2 as cv
 import numpy as np
 
@@ -24,7 +25,9 @@ class VideoCamera(object):
     def change_resolution(self, width, height):
         if width == self.width or height == self.height:
             return
-        
+
+        self.capture.release()
+        self.capture = cv2.VideoCapture(self.capture_source)
         self.capture.set(cv.CAP_PROP_FRAME_WIDTH, width)
         self.capture.set(cv.CAP_PROP_FRAME_HEIGHT, height)
         self.width = width

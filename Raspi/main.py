@@ -19,12 +19,20 @@ SERIAL_ENABLE = True
 
 try:
     pi_camera = VideoCamera(capture_source=0)
+    print("====="*5)
+    print("相机成功打开")
+    print("====="*5)
+    CAMERA_ENABLE = True
 except Exception as e:
     print(f"Error initializing camera: {e}")
     CAMERA_ENABLE = False
     
 try:
     pi_serial = piSerial('/dev/ttyACM0', 9600)
+    print("=====" * 5)
+    print("串口通讯成功打开")
+    print("=====" * 5)
+    SERIAL_ENABLE = True
 except Exception as e:
     print(f"Error initializing serial port: {e}")
     SERIAL_ENABLE = False

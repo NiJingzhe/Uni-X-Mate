@@ -133,7 +133,7 @@ def move_control():
         # 确保超时警报被取消
         signal.alarm(0)
 
-if __name__ == '__main__':
+def control_server_main():
     try:
         app.run('0.0.0.0', port='5001', threaded=True)
     except KeyboardInterrupt:

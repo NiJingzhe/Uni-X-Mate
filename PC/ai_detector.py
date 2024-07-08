@@ -12,12 +12,9 @@ def ai_detect(model_path, frame_queue, result_queue):
     try:
         while not keyboard.is_pressed("p"):
             while not frame_queue.empty():
-                #print("detecting...")
                 frame = frame_queue.get()
-                #print(frame)
                 results = model(frame, device = device)
                 results_list = []
-                #print("detect finished", results)
                 for result in results:
                     result_dict = {}
                     for box in result.boxes:

@@ -14,6 +14,16 @@ def send_post_request(target_ip, param=None):
     except requests.exceptions.RequestException as e:
         print(f"Error sending request: {e}")
         return None
+    
+def send_get_request(target_ip, params=None):
+    try:
+        response = requests.get(target_ip, params=params, timeout=5)
+        if response.status_code != 200:
+            print(f"Error sending request: {response.status_code}")
+        return response
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending request: {e}")
+        return None
 
 # Default connection callback
 def on_connection(client : mqtt.Client, userdata, flags, rc):

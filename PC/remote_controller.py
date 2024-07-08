@@ -23,14 +23,23 @@ def remote_control(target, movement_info_queue):
     host = target
     print("遥控器已启动")
     try:
+        counter = 0
         while not keyboard.is_pressed("p"):
             forward_back, left_right = get_key_state()
             # 发送运动控制指令
             response = send_post_request("http://" + host + "/move", {"forward_back": forward_back, "left_right": left_right})
-            #movement_state = response.json()["movement_state"]
-            #movement_info_queue.put(movement_state)
-            #if movement_info_queue.qsize() > 100:
-            #    movement_info_queue.get()
+            counter += 1
+            if counter < 20:
+                continue
+            counter = 20
+            try:
+                movement_state = response.json()["feedback"]
+                movement_info_queue.put(movement_state)
+                print(movement_state)
+                if movement_info_queue.qsize() > 1:
+                    movement_info_queue.get()
+            except Exception as e:
+                print(f"遥控器错误: {e}")
     except KeyboardInterrupt:
         print("遥控器已停止。")
         exit(0)

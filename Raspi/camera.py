@@ -8,11 +8,12 @@ class VideoCamera(object):
         self.capture_source = capture_source
         self.width = width
         self.height = height
-        self.capture = cv.VideoCapture(self.capture_source, cv2.CAP_V4L2)
+        self.capture = cv.VideoCapture(self.capture_source, cv.CAP_V4L2)
         if not self.capture.isOpened():
             raise Exception("不能打开摄像头")
         self.capture.set(cv.CAP_PROP_FRAME_WIDTH, self.width)
         self.capture.set(cv.CAP_PROP_FRAME_HEIGHT, self.height)
+        self.capture.set(cv.CAP_PROP_FPS, 15)
 
     
     def get_frame(self):
@@ -21,7 +22,7 @@ class VideoCamera(object):
         if not ret:
             raise Exception("不能读取视频帧")
         # 应用变换
-        ret, jpeg = cv.imencode('.jpg', frame)
+        ret, jpeg = cv.imencode('.jpg', cv.cvtColor(frame, cv.COLOR_BGR2GRAY))
         if not ret:
             raise Exception("不能进行转码")
         # 返回编码后的字节数据

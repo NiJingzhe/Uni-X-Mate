@@ -1,7 +1,7 @@
 {
     "ip" : "192.168.137.10",
     "port" : 5000,
-    "width" : 1024,
-    "height" : 768,
+    "width" : 800,
+    "height" : 600,
     "model_path" : "./yolov10.pt"
 }

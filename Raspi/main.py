@@ -1,8 +1,3 @@
-#modified by smartbuilds.io
-#Date: 27.09.20
-#Desc: This web application serves a motion JPEG stream
-# main.py
-# import the necessary packages
 from flask import Flask, render_template, Response, request, send_from_directory
 from camera import VideoCamera
 from piserial import piSerial
@@ -53,13 +48,16 @@ def video():
     data = request.get_json()   
     width = data.get('width', 640)
     height = data.get('height', 480)
-    pi_camera.change_resolution(width, height)
     
-    frame = pi_camera.get_frame()
-    if frame is None:
-        return Response(status=204)  # No Content
-    return Response(frame, mimetype='image/jpeg')
-
+    try:
+        pi_camera.change_resolution(width, height)
+        frame = pi_camera.get_frame()
+        return Response(frame, mimetype='image/jpeg')
+    except e as Exception:
+        print(f"/Video Route Error happend : {e}")
+        return Response(status=204) 
+    #if frame is None:
+    #    return Response(status=204)  # No Content
 
 def int_to_signed_byte(value):
     """Convert an integer to a signed byte."""

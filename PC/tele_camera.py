@@ -11,20 +11,20 @@ def tele_camera(target, width, height, frame_queue : Queue, result_queue : Queue
     host = target
     try:
         while not keyboard.is_pressed("p"):
-            start_time = time.time()
+            #start_time = time.time()
             response = send_post_request("http://" + host + "/video", {'width': width, 'height': height})
-            end_time = time.time()
-            print("=======" * 5, "\n图传时间: ", end_time - start_time, "\n====================")
+            #end_time = time.time()
+            #print("=======" * 5, "\n图传时间: ", end_time - start_time, "\n====================")
             if response is not None and response.headers['Content-Type'] == 'image/jpeg':
                 image_data = np.frombuffer(response.content, np.uint8)
                 frame = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
-                start_time = time.time()
+                #start_time = time.time()
                 frame_queue.put(frame)
                 if frame_queue.qsize() > 5:
                     frame_queue.get()
-                end_time = time.time()
+                #end_time = time.time()
                 #print("=======" * 5, "\n图传->AI时间: ", end_time - start_time, "\n====================")
-                start_time = time.time()
+                #start_time = time.time()
                 if frame is not None:
                     while not result_queue.empty():
                         result = result_queue.get()
@@ -47,7 +47,7 @@ def tele_camera(target, width, height, frame_queue : Queue, result_queue : Queue
                     if cv2.waitKey(1) & 0xFF == ord('p'):
                         cv2.destroyAllWindows()
                         break
-                end_time = time.time()
+                #end_time = time.time()
                 #print("=======" * 5, "\n拿结果+绘制时间: ", end_time - start_time, "\n====================\n\n\n")
     except KeyboardInterrupt:
         

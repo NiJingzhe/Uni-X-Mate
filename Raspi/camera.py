@@ -22,7 +22,7 @@ class VideoCamera(object):
         if not ret:
             raise Exception("不能读取视频帧")
         # 应用变换
-        ret, jpeg = cv.imencode('.jpg', cv.cvtColor(frame, cv.COLOR_BGR2GRAY))
+        ret, jpeg = cv.imencode('.jpg', frame)
         if not ret:
             raise Exception("不能进行转码")
         # 返回编码后的字节数据

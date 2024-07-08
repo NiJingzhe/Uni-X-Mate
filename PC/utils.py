@@ -2,11 +2,11 @@ import requests
 import paho.mqtt.client as mqtt
 
 
-def send_post_request(target_ip, param=None):
-    if param is None:
-        param = {}
+def send_post_request(target_ip, params=None):
+    if params is None:
+        params = {}
     try:
-        response = requests.post(target_ip, json=param, timeout=5)
+        response = requests.post(target_ip, json=params, timeout=5)
         if response.status_code != 200:  # Check if the response status code is not 200 (OK)
             print(f"Error sending request: {response.status_code}")
         #print(f"Response code: {response.status_code}")

@@ -11,16 +11,6 @@ import serial
 
 #CAMERA_ENABLE = True
 SERIAL_ENABLE = True
-
-# try:
-#     pi_camera = VideoCamera(capture_source=0)
-#     print("====="*5)
-#     print("相机成功打开")
-#     print("====="*5)
-#     CAMERA_ENABLE = True
-# except Exception as e:
-#     print(f"Error initializing camera: {e}")
-#     CAMERA_ENABLE = False
     
 try:
     pi_serial = piSerial('/dev/ttyACM0', 9600)
@@ -40,41 +30,9 @@ class COMMANDS(Enum):
 # App Globals (do not edit)
 app = Flask(__name__)
 
-# @app.route('/video', methods=['POST'])
-# def video():
-#     if not CAMERA_ENABLE:
-#         return Response(status=500)
-    
-#     data = request.get_json()   
-#     width = data.get('width', 640)
-#     height = data.get('height', 480)
-    
-#     try:
-#         with camera_lock:
-#             pi_camera.change_resolution(width, height)
-#             frame = pi_camera.get_frame()
-#         return Response(frame, mimetype='image/jpeg')
-#     except Exception as e:
-#         print(f"/Video Route Error happend : {e}")
-#         return Response(status=204) 
-#     #if frame is None:
-#     #    return Response(status=204)  # No Content
-
 def int_to_signed_byte(value):
     """Convert an integer to a signed byte."""
-    #if value < 0:
-    #    value += 256
-    #return value.to_bytes(1, byteorder='big')
     return struct.pack('b', value)
-
-# 定义超时处理函数
-def timeout_handler(signum, frame):
-    raise TimeoutError("Request timed out")
-
-# 注册信号处理器
-if SERIAL_ENABLE:
-    signal.signal(signal.SIGALRM, timeout_handler)
-#signal.signal(signal.SIGALRM, timeout_handler)
 
 @app.route('/move', methods=['POST'])
 def move_control():
@@ -88,34 +46,24 @@ def move_control():
 
     # 构建MOVE命令的字节流
     command_byte = COMMANDS.MOVE.value.to_bytes(1, 'big')
-    forward_back_byte = int_to_signed_byte(forward_back)
-    left_right_byte = int_to_signed_byte(left_right)
+    forward_back_byte = struct.pack('b', forward_back)
+    left_right_byte = struct.pack('b', left_right)
     command_stream_bytes = command_byte + forward_back_byte + left_right_byte
 
     try:
-        # 启动超时警报
-        signal.alarm(10)
-        
         pi_serial = piSerial('/dev/ttyACM0', 9600)
 
         # 发送命令字节流到Arduino
         pi_serial.write(command_stream_bytes)
-        print("to serial : ", command_stream_bytes)
+        #print("to serial : ", command_stream_bytes)
 
         # 读取反馈
         feed_back = pi_serial.readline().decode().strip()
-        print("from serial: ", feed_back)
-
-        # 取消超时警报
-        signal.alarm(0)
+        #print("from serial: ", feed_back)
 
         pi_serial.close()
 
         return jsonify({'feedback': feed_back})
-
-    except TimeoutError:
-        print("Request timed out")
-        return jsonify({'error': 'Request timed out'}), 500
 
     except serial.SerialTimeoutException:
         print("Serial timeout occurred while writting to the serial port")
@@ -130,8 +78,7 @@ def move_control():
         return jsonify({'error': f'An unexpected error occurred: {e}'}), 500
 
     finally:
-        # 确保超时警报被取消
-        signal.alarm(0)
+        pass
 
 def control_server_main():
     try:

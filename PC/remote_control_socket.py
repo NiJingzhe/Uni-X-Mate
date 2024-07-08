@@ -1,7 +1,7 @@
-# remote_control.py
+import socket
 import keyboard
-from utils import *
 import time
+import queue
 
 def get_key_state():
     forward_back = 0
@@ -19,37 +19,41 @@ def get_key_state():
         
     return forward_back, left_right
 
-def remote_control(target, movement_info_queue):
-
-    host = target
+def remote_control(target_ip, target_port, movement_info_queue):
+    host = target_ip
+    port = target_port
     print("遥控器已启动")
+
     try:
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect((host, port))
+        
         counter = 0
         while not keyboard.is_pressed("p"):
             forward_back, left_right = get_key_state()
-            # 发送运动控制指令
+            command = f"{forward_back},{left_right}\n"
             start_time = time.time()
-            response = send_post_request("http://" + host + "/move", {"forward_back": forward_back, "left_right": left_right})
+            client_socket.sendall(command.encode('utf-8'))
             end_time = time.time()
-            print("post time is : ", end_time - start_time)
+            print("send time is : ", end_time - start_time)
+            
             counter += 1
             if counter < 20:
                 continue
             counter = 20
+            
             try:
-                movement_state = response.json()["feedback"]
-                movement_info_queue.put(movement_state)
-                #print(movement_state)
+                feedback = client_socket.recv(1024).decode('utf-8')
+                movement_info_queue.put(feedback)
+                
                 if movement_info_queue.qsize() > 1:
                     movement_info_queue.get()
             except Exception as e:
                 print(f"遥控器错误: {e}")
     except KeyboardInterrupt:
         print("遥控器已停止。")
-        exit(0)
     except Exception as e:
         print(f"遥控器错误: {e}")
-        exit(0)
     finally:
+        client_socket.close()
         print("遥控器线程终止。")
-        exit(0)

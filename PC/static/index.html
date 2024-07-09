@@ -15,24 +15,24 @@
     <div id="app">
         <div id="header">GROUP 9</div>
         <div id="info-board">
-            <img :src="carIcon" alt="Racecar" style="margin-bottom: 20px">
+            <img :src="teamIcon" alt="Racecar" style="margin-bottom: 20px">
             <div id="gauge" style="width: 300px; height: 300px"></div>
             <div>
                 <div class="info-item"><div>Speed: </div><div>{{ speed }} km/h</div></div>
-                <div class="info-item"><div>Front Distance: </div><div>{{ frontDistance }} m</div></div>
+                <!-- <div class="info-item"><div>Front Distance: </div><div>{{ frontDistance }} m</div></div>
                 <div class="info-item"><div>Rear Distance: </div><div>{{ rearDistance }} m</div></div>
                 <div class="info-item"><div>Left Distance: </div><div>{{ leftDistance }} m</div></div>
-                <div class="info-item"><div>Right Distance: </div><div>{{ rightDistance }} m</div></div>
+                <div class="info-item"><div>Right Distance: </div><div>{{ rightDistance }} m</div></div> -->
             </div>
 
         </div>
-        <div id="content">
+        <!-- <div id="content">
             <div id="image-container">
                 <img class="robot-icon" :src="robotIcon" alt="Robot Icon" style="border-radius: 12px">
                 <img v-if="imageUrl" :src="imageUrl" alt="Image">
                 <p v-else>Waiting for images...</p>
             </div>
-        </div>
+        </div> -->
         <div id="processed-image-container">
             <img v-if="processedImageUrl" :src="processedImageUrl" alt="Processed Image">
             <p v-else>No processed image available</p>
@@ -57,7 +57,7 @@
                     rearDistance: 0,
                     leftDistance: 0,
                     rightDistance: 0,
-                    carIcon: '/get_local_image/car.jpg',
+                    teamIcon: '/get_local_image/logo.png',
                     robotIcon: '/get_local_image/monitor.jpg',
                     nameIcon: '/get_local_image/ID.png',
                     // speedIcon: '/get_local_image/speed.png',
@@ -232,7 +232,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        width: 50%;
+        width: 90%;
         height: 100%;
         background-color: rgba(255, 255, 255, 0.3);
         padding: 20px;
@@ -242,7 +242,7 @@
     /* 图片样式 */
     #info-board img, #processed-image-container img {
         width: 100%;
-        max-width: 300px;
+        max-width: 600px;
         margin-bottom: 20px;
         border-radius: 12px;
         transition: transform 0.3s ease;

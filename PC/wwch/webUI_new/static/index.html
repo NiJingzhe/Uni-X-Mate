@@ -28,7 +28,7 @@
         <div id="content">
             <div id="image-container">
                 <img class="robot-icon" :src="robotIcon" alt="Robot Icon" style="border-radius: 12px">
-                <video id="video" width="640" height="480" autoplay></video>
+                <img id="video" width="640" height="480" style="border-radius: 12px;">
             </div>
         </div>
         <div id="processed-image-container">
@@ -145,14 +145,12 @@
                 this.initGauge();
                 this.fetchSpeed();
                 this.fetchResult();
-                setInterval(this.fetchSpeed, 200)
-                setInterval(this.fetchResult, 200)
+                setInterval(this.fetchSpeed, 200);
+                setInterval(this.fetchResult, 200);
 
                 // Start video stream
-                const video = document.getElementById('video');
-                video.src = '/video_feed';
-                video.load();
-                video.play();
+                const videoElement = document.getElementById('video');
+                videoElement.src = '/video_feed';
             }
         }).use(ElementPlus).mount('#app')
     </script>

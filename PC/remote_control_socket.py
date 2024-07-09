@@ -1,6 +1,8 @@
+import random
 import socket
 import keyboard
 import time
+from utils import *
 import queue
 
 def get_key_state():
@@ -48,6 +50,7 @@ def remote_control_socket(target_ip, target_port, movement_info_queue):
             #     pressed_key = ''
 
             pressed_key = ''
+            speed = 0
             if keyboard.is_pressed('w'):
                 pressed_key += 'w'
             elif keyboard.is_pressed('s'):

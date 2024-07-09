@@ -32,12 +32,12 @@ def main():
     remote_control_process.daemon = True
     tele_camera_process.daemon = True
     ai_detect_process.daemon = True
-    dashboard_process.daemon = True
 
-    remote_control_process.start()
-    tele_camera_process.start()
-    ai_detect_process.start()
     dashboard_process.start()
+    ai_detect_process.start()
+    tele_camera_process.start()
+    remote_control_process.start()
+
 
     print("Press 'p' to terminate the program.")
 

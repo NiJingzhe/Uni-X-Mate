@@ -1,20 +1,18 @@
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../')
-from tele_camera import tele_camera, last_frame
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from wwch.tele_camera import tele_camera, last_frame
 
 import multiprocessing
-from multiprocessing import Process, Array, Manager, Queue  # Add Queue import
+from multiprocessing import Process, Array, Manager, Queue
 from flask import Flask, Response, send_file, send_from_directory, jsonify
 import numpy as np
 import io
 from PIL import Image
-import time
-import base64
-import requests
 import logging
 import random
 import cv2
+import base64
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
@@ -39,6 +37,14 @@ def array_to_image(array):
 
 def array_from_shared(shared_array):
     return np.frombuffer(shared_array, dtype=np.uint8).reshape(monitor_shape)
+
+def get_image_base64(image_array):
+    img = Image.fromarray(image_array)
+    img_buffer = io.BytesIO()
+    img.save(img_buffer, format='JPEG')
+    img_buffer.seek(0)
+    img_str = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
+    return img_str
 
 @app.route('/')
 def home():
@@ -85,11 +91,13 @@ def video_feed():
     return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
+    IP = "192.168.137.10"  # 替换为树莓派的实际IP地址
+    PORT = 5000  # 替换为树莓派上的视频服务器端口
     multiprocessing.freeze_support()  # 添加这行代码
     manager = Manager()
     monitor, result_image, result_name, speed = create_shared_arrays(manager)
 
-    target = "your_target_ip_here"  # 替换为实际的目标IP地址
+    target = f"{IP}:{PORT}"  # 使用实际目标IP和端口
     width = 640
     height = 480
     frame_queue = Queue()
@@ -99,5 +107,5 @@ if __name__ == '__main__':
     p = Process(target=tele_camera, args=(target, width, height, frame_queue, result_queue))
     p.start()
 
-    app.run(host="0.0.0.0", debug=True)
+    app.run(host="0.0.0.0", debug=True, use_reloader=False)  # Ensure no reloader is used
     p.join()

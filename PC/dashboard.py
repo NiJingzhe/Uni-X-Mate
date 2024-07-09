@@ -10,6 +10,7 @@ import base64
 import requests
 import logging
 import random
+import keyboard
 import cv2
 
 #log = logging.getLogger('werkzeug')
@@ -24,7 +25,7 @@ app.config['UPLOAD_FOLDER'] = 'static/images'
 monitor = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
 result_image = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
 result_name = 'Non Detected'
-speed = 20
+#speed = 20
 info = None
 
 def array_to_image(array):
@@ -53,11 +54,47 @@ def get_local_image(filename):
 
 @app.route('/get_speed')
 def get_speed():
+    pressed_key = ''
+    speed = 0
+    if keyboard.is_pressed('w'):
+        pressed_key += 'w'
+    elif keyboard.is_pressed('s'):
+        pressed_key += 's'
+    else:
+        pressed_key += ' '
+
+    if keyboard.is_pressed('a'):
+        pressed_key += 'a'
+    elif keyboard.is_pressed('d'):
+        pressed_key += 'd'
+    else:
+        pressed_key += ' '
+
+    if pressed_key == ' a' or pressed_key == ' d' or pressed_key == '  ':
+        speed = 0
+    elif 'w' in pressed_key or 's' in pressed_key:
+        speed += 240
+        if 'a' in pressed_key or 'd' in pressed_key:
+            speed -= 164
+
+    speed += random.randint(-5, 5)
+    if speed < 0:
+        speed = 0
+
+    info['speed'] = speed
     speed_data = {
-        'speed': random.uniform(0, 200)  # 生成0到200之间的随机速度
+        'speed': info['speed']  # 生成0到200之间的随机速度
     }
     return jsonify(speed_data)
 
+@app.route('/set_speed', methods=['POST'])
+def set_speed():
+    try:
+        data = request.get_json()
+        info['speed'] = data['speed']
+        return jsonify(success=True)
+    except Exception as e:
+        return jsonify(success=False, message=str(e)), 400
 
 @app.route('/get_result')
 def get_result():
@@ -110,7 +147,7 @@ def run_dashborad():
         info['monitor'] = monitor
         info['result_image'] = result_image
         info['result_name'] = result_name
-        info['speed'] = speed
+        info['speed'] = 0
         #noise_process = Process(target=generate_noise_image, args=(info,))
         #noise_process.daemon = True
         #noise_process.start()

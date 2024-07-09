@@ -1,6 +1,7 @@
-from multiprocessing import Process, Queue
+import multiprocessing
+from multiprocessing import Process, Manager
 
-from flask import Flask, render_template, jsonify, send_file, send_from_directory
+from flask import Flask, render_template, jsonify, send_file, send_from_directory, request
 import numpy as np
 import io
 from PIL import Image
@@ -18,12 +19,11 @@ app.config['UPLOAD_FOLDER'] = 'static/images'
 
 # 注意不能使用queue，当多人访问时，会造成数据消耗过快。
 
-# 模拟图片队列
+# 模拟图片队
 monitor = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
 result_image = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
 result_name = 'Persian'
 speed = 20
-
 
 def array_to_image(array):
     img = Image.fromarray(array)
@@ -37,7 +37,7 @@ def home():
 
 @app.route('/get_image')
 def get_image():
-    img = array_to_image(monitor)
+    img = array_to_image(info['monitor'])
     img_io = io.BytesIO()
     img.save(img_io, 'JPEG')
     img_io.seek(0)
@@ -60,16 +60,15 @@ def get_speed():
 @app.route('/get_result')
 def get_result():
     result_data = {
-        'image': get_image_base64(result_image),
-        'name': result_name
+        'image': get_image_base64(info['result_image']),
+        'name': info['result_name']
     }
     return jsonify(result_data)
 
 
-def generate_noise_image():
-    global monitor
+def generate_noise_image(info):
     while True:
-        monitor = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
+        info['monitor'] = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
         time.sleep(0.02)  # 每0.02秒生成一次噪声图片
 
 
@@ -81,9 +80,36 @@ def get_image_base64(image_array):
     return base64.b64encode(buffered.getvalue()).decode('utf-8')
 
 
+# 设置monitor
+@app.route('/set_monitor', methods=['POST'])
+def set_value():
+    try:
+        data = request.get_json()
+        info['monitor'] = np.asarray(data['image'])
+        return jsonify(success=True)
+    except Exception as e:
+        return jsonify(success=False, message=str(e)), 400
+
+@app.route('/set_result', methods=['POST'])
+def set_result():
+    try:
+        data = request.get_json()
+        info['result_image'] = np.asarray(data['image'])
+        info['result_name'] = data['name']
+        return jsonify(success=True)
+    except Exception as e:
+        return jsonify(success=False, message=str(e)), 400
+
 if __name__ == '__main__':
-    noise_process = Process(target=generate_noise_image)
-    noise_process.daemon = True
-    noise_process.start()
-    app.run(host="0.0.0.0", debug=True)
-    noise_process.join()
+    with multiprocessing.Manager():
+        manager = Manager()
+        info = manager.dict()
+        info['monitor'] = monitor
+        info['result_image'] = result_image
+        info['result_name'] = result_name
+        info['speed'] = speed
+        noise_process = Process(target=generate_noise_image, args=(info,))
+        noise_process.daemon = True
+        noise_process.start()
+        app.run(host="0.0.0.0", debug=True)
+        noise_process.join()

@@ -12,8 +12,8 @@ import logging
 import random
 import cv2
 
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
+#log = logging.getLogger('werkzeug')
+#log.setLevel(logging.ERROR)
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/images'
@@ -86,7 +86,7 @@ def get_image_base64(image_array):
 def set_value():
     try:
         data = request.get_json()
-        info['monitor'] = np.asarray(data['image'])
+        info['monitor'] = np.asarray(data['image'], dtype=np.uint8)
         return jsonify(success=True)
     except Exception as e:
         return jsonify(success=False, message=str(e)), 400
@@ -109,8 +109,8 @@ if __name__ == '__main__':
         info['result_image'] = result_image
         info['result_name'] = result_name
         info['speed'] = speed
-        noise_process = Process(target=generate_noise_image, args=(info,))
-        noise_process.daemon = True
-        noise_process.start()
+        #noise_process = Process(target=generate_noise_image, args=(info,))
+        #noise_process.daemon = True
+        #noise_process.start()
         app.run(host="0.0.0.0", port=5000)
-        noise_process.join()
+        #noise_process.join()

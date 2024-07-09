@@ -23,8 +23,9 @@ app.config['UPLOAD_FOLDER'] = 'static/images'
 # 模拟图片队
 monitor = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
 result_image = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
-result_name = 'Persian'
+result_name = 'Non Detected'
 speed = 20
+info = None
 
 def array_to_image(array):
     img = Image.fromarray(array)
@@ -101,8 +102,9 @@ def set_result():
     except Exception as e:
         return jsonify(success=False, message=str(e)), 400
 
-if __name__ == '__main__':
+def run_dashborad():
     with multiprocessing.Manager():
+        global info
         manager = Manager()
         info = manager.dict()
         info['monitor'] = monitor

@@ -2,6 +2,7 @@ from remote_controller import remote_control
 from tele_camera import tele_camera
 from remote_control_socket import remote_control_socket
 from remote_controller import remote_control
+from app import run_dashborad
 from ai_detector import ai_detect
 import multiprocessing
 import json
@@ -25,15 +26,18 @@ def main():
                                                                             g_frame_queue, g_result_queue,))
     ai_detect_process = multiprocessing.Process(target=ai_detect, args=(config["model_path"],
                                                                         g_frame_queue, g_result_queue,))
+    dashboard_process = multiprocessing.Process(target=run_dashborad)
 
     # 将进程设置为守护进程
     remote_control_process.daemon = True
     tele_camera_process.daemon = True
     ai_detect_process.daemon = True
+    dashboard_process.daemon = True
 
     remote_control_process.start()
     tele_camera_process.start()
     ai_detect_process.start()
+    dashboard_process.start()
 
     print("Press 'p' to terminate the program.")
 
@@ -44,11 +48,13 @@ def main():
     remote_control_process.terminate()
     tele_camera_process.terminate()
     ai_detect_process.terminate()
+    dashboard_process.terminate()
 
     # 等待进程终止
     remote_control_process.join()
     tele_camera_process.join()
     ai_detect_process.join()
+    dashboard_process.join()
 
     print("Program terminated.")
 

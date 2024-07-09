@@ -10,6 +10,7 @@ import base64
 import requests
 import logging
 import random
+import cv2
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
@@ -111,5 +112,5 @@ if __name__ == '__main__':
         noise_process = Process(target=generate_noise_image, args=(info,))
         noise_process.daemon = True
         noise_process.start()
-        app.run(host="0.0.0.0", debug=True)
+        app.run(host="0.0.0.0", port=5000)
         noise_process.join()

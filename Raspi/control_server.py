@@ -50,10 +50,10 @@ def move_control():
 
     try:
         # 发送命令字节流到Arduino
-        start_time = time.time()
+        #start_time = time.time()
         pi_serial.write(command_stream_bytes)
-        end_time = time.time()
-        print("Serial send time : ", end_time - start_time)
+        #end_time = time.time()
+        #print("Serial send time : ", end_time - start_time)
         #print("to serial : ", command_stream_bytes)
 
         # 读取反馈

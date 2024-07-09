@@ -22,11 +22,14 @@ def tele_camera(target, width, height, frame_queue: Queue, result_queue: Queue):
                         bytes = bytes[b+2:]
                         image_data = np.frombuffer(jpg, np.uint8)
                         frame = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
+                        send_post_request("http://localhost:5000/set_monitor", params={"image" : frame})
                         #frame = image_data
                         frame_queue.put(frame)
                         if frame_queue.qsize() > 5:
                             frame_queue.get()
                         if frame is not None:
+                            max_confidence = 0
+                            most_likely_name = ""
                             while not result_queue.empty():
                                 result = result_queue.get()
                                 if len(result.keys()) == 0:
@@ -35,12 +38,16 @@ def tele_camera(target, width, height, frame_queue: Queue, result_queue: Queue):
                                 x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
                                 class_name = result["class_name"]
                                 confidence = result["confidence"]
-
-                                if confidence > 0.5:
+                                
+                                if confidence > 0.5 and keyboard.is_pressed("k"):
                                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                                     cv2.putText(frame, class_name, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
                                     cv2.putText(frame, str(confidence), (x1, y1 - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-
+                                    if confidence > max_confidence:
+                                        max_confidence = confidence
+                                        most_likely_name = class_name
+                            
+                            send_post_request("http://localhost:5000/set_name", params={"name" : most_likely_name, "image" : frame})
                             cv2.imshow("Tele Camera", frame)
 
                             if cv2.waitKey(1) & 0xFF == ord('p'):

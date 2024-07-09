@@ -47,9 +47,9 @@ def handle_client_connection(client_socket):
                 forward_back = 0
             
             if "a" in message:
-                left_right = -1
-            elif "d" in message:
                 left_right = 1
+            elif "d" in message:
+                left_right = -1
             else:
                 left_right = 0
 
@@ -64,9 +64,10 @@ def handle_client_connection(client_socket):
                     #pi_serial = piSerial(SERIAL_PORT, SERIAL_BAUDRATE)
                     pi_serial.write(command_stream_bytes)
                     pi_serial.reset_input_buffer()
-                    feed_back = pi_serial.readline().decode().strip()
+                    pi_serial.ser.reset_output_buffer()
+                    #feed_back = pi_serial.readline().decode().strip()
                     #pi_serial.close()
-                    client_socket.sendall(feed_back.encode('utf-8'))
+                    client_socket.sendall("sss".encode('utf-8'))
                 else:
                     client_socket.sendall(b"Serial not enabled")
             except serial.SerialTimeoutException:
@@ -79,15 +80,19 @@ def handle_client_connection(client_socket):
     finally:
         client_socket.close()
 
+
 def start_socket_server():
     """Start the socket server."""
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((HOST, PORT))
     server_socket.listen(5)
     print(f"Socket server listening on {HOST}:{PORT}")
-    
+
     while True:
-        client_socket, addr = server_socket.accept()
-        print(f"Accepted connection from {addr}")
-        client_handler = threading.Thread(target=handle_client_connection, args=(client_socket,))
-        client_handler.start()
+        try:
+            client_socket, addr = server_socket.accept()
+            print(f"Accepted connection from {addr}")
+            client_handler = threading.Thread(target=handle_client_connection, args=(client_socket,))
+            client_handler.start()
+        except Exception as e:
+            print(f"Error accepting connection: {e}")

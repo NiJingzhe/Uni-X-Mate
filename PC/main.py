@@ -1,6 +1,7 @@
 from remote_controller import remote_control
 from tele_camera import tele_camera
-#from remote_control_socket import remote_control_socket
+from remote_control_socket import remote_control_socket
+from remote_controller import remote_control
 from ai_detector import ai_detect
 import multiprocessing
 import json
@@ -11,15 +12,14 @@ g_frame_queue = multiprocessing.Queue()
 g_result_queue = multiprocessing.Queue()
 g_movement_info_queue = multiprocessing.Queue()
 
-
 def main():
     config = json.load(open('config.json'))
     video_target = config["ip"] + ":" + str(config["video_port"])  # Ensure correct formatting
     control_target = config["ip"] + ":" + str(config["control_port"])
 
     # 进程取代线程
-    remote_control_process = multiprocessing.Process(target=remote_control, args=(control_target, g_movement_info_queue,))
-    #remote_control_process = multiprocessing.Process(target=remote_control_socket, args=(config["ip"],config["control_port"],g_movement_info_queue,))
+    #remote_control_process = multiprocessing.Process(target=remote_control, args=(control_target, g_movement_info_queue,))
+    remote_control_process = multiprocessing.Process(target=remote_control_socket, args=(config["ip"],config["control_port"],g_movement_info_queue,))
     tele_camera_process = multiprocessing.Process(target=tele_camera, args=(video_target, config["width"],
                                                                             config["height"],
                                                                             g_frame_queue, g_result_queue,))

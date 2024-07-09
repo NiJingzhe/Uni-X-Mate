@@ -2,7 +2,7 @@
     "ip" : "192.168.137.10",
     "video_port" : 5000,
     "control_port" : 5001,
-    "width" : 1024,
-    "height" : 768,
+    "width" : 640,
+    "height" : 480,
     "model_path" : "./yolov10.pt"
 }

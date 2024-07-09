@@ -4,7 +4,7 @@
 #include <MPU6050.h>
 #include <Kalman.h>
 
-#define USE_ULTRASONIC 1
+#define USE_ULTRASONIC 0
 #define USE_CHASSIS 1
 #define USE_IMU 0
 
@@ -197,7 +197,6 @@ void Process_Command() {
       break;
   }
 
-
   
   // command_data.imm_stop_flag = false;
   // command_data.forward_back = 0;
@@ -330,8 +329,8 @@ void Control_Motors() {
     movement_state.r_motor_speed = WHEEL_MAX_SPEED * (command_data.forward_back * 1.2);
   }
   else if (command_data.forward_back == 0) {
-    movement_state.l_motor_speed = WHEEL_MAX_SPEED * (command_data.left_right);
-    movement_state.r_motor_speed = WHEEL_MAX_SPEED * (command_data.left_right);
+    movement_state.l_motor_speed = WHEEL_MAX_SPEED * (-command_data.left_right*1.1);
+    movement_state.r_motor_speed = WHEEL_MAX_SPEED * (command_data.left_right*1.1);
   }
   else {
     movement_state.l_motor_speed = WHEEL_MAX_SPEED * (command_data.forward_back - command_data.left_right);

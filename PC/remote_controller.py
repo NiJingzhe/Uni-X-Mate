@@ -37,8 +37,8 @@ def remote_control(target, movement_info_queue):
                 continue
             counter = 20
             try:
-                movement_state = response.json()["feedback"]
-                movement_info_queue.put(movement_state)
+                #movement_state = response.json()["feedback"]
+                #movement_info_queue.put(movement_state)
                 #print(movement_state)
                 if movement_info_queue.qsize() > 1:
                     movement_info_queue.get()

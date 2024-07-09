@@ -5,6 +5,7 @@ from enum import Enum
 import struct
 from flask import Flask, request, jsonify
 import serial
+import time
 
 #CAMERA_ENABLE = True
 SERIAL_ENABLE = True
@@ -49,15 +50,21 @@ def move_control():
 
     try:
         # 发送命令字节流到Arduino
+        start_time = time.time()
         pi_serial.write(command_stream_bytes)
+        end_time = time.time()
+        print("Serial send time : ", end_time - start_time)
         #print("to serial : ", command_stream_bytes)
 
         # 读取反馈
         pi_serial.reset_input_buffer()
-        feed_back = pi_serial.readline().decode().strip()
+        pi_serial.ser.reset_output_buffer()
+        #feed_back = pi_serial.readline().decode().strip()
+        #end_time = time.time()
+        #print("Serila read time : ", end_time - start_time)
         #print("from serial: ", feed_back)
 
-        return jsonify({'feedback': feed_back})
+        return jsonify({'feedback': '111'})
 
     except serial.SerialTimeoutException:
         print("Serial timeout occurred while writting to the serial port")

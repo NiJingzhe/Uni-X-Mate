@@ -1,7 +1,5 @@
-from remote_controller import remote_control
 from tele_camera import tele_camera
 from remote_control_socket import remote_control_socket
-from remote_controller import remote_control
 from dashboard import run_dashborad
 from ai_detector import ai_detect
 import multiprocessing

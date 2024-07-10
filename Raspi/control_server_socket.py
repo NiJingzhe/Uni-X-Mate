@@ -20,16 +20,14 @@ class COMMANDS(Enum):
 # Initialize serial
 try:
     pi_serial = piSerial(SERIAL_PORT, SERIAL_BAUDRATE)
+    print("====="*5)
     print("串口通讯成功打开")
+    print("====="*5)
     SERIAL_ENABLE = True
 except Exception as e:
     print(f"Error initializing serial port: {e}")
     SERIAL_ENABLE = False
-
-def int_to_signed_byte(value):
-    """Convert an integer to a signed byte."""
-    return struct.pack('b', value)
-
+    
 def handle_client_connection(client_socket):
     """Handle incoming socket connection."""
     try:
@@ -61,13 +59,11 @@ def handle_client_connection(client_socket):
 
             try:
                 if SERIAL_ENABLE:
-                    #pi_serial = piSerial(SERIAL_PORT, SERIAL_BAUDRATE)
                     pi_serial.write(command_stream_bytes)
                     pi_serial.reset_input_buffer()
-                    pi_serial.ser.reset_output_buffer()
-                    #feed_back = pi_serial.readline().decode().strip()
-                    #pi_serial.close()
-                    client_socket.sendall("sss".encode('utf-8'))
+                    pi_serial.reset_output_buffer()
+                    feed_back = pi_serial.readline()
+                    client_socket.sendall(feed_back.encode('utf-8'))
                 else:
                     client_socket.sendall(b"Serial not enabled")
             except serial.SerialTimeoutException:
@@ -81,7 +77,7 @@ def handle_client_connection(client_socket):
         client_socket.close()
 
 
-def start_socket_server():
+def control_socket_start():
     """Start the socket server."""
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((HOST, PORT))

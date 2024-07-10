@@ -4,9 +4,9 @@
 #include <MPU6050.h>
 #include <Kalman.h>
 
-#define USE_ULTRASONIC 0
+#define USE_ULTRASONIC 1
 #define USE_CHASSIS 1
-#define USE_IMU 0
+#define USE_IMU 1
 
 // 定义电机
 AF_DCMotor Motor_LB(1); // 电机1
@@ -18,12 +18,14 @@ Kalman kalmanX; // X轴的卡尔曼滤波器
 Kalman kalmanY; // Y轴的卡尔曼滤波器
 
 // 常量区
+static unsigned long last_trigger_time=0;
 const int LED_PIN = 24;  // 红色LED引脚
 const int TRIG_PIN = 40; // 超声波传感器的TRIG引脚
 const int ECHO_PIN_FRONT = 18; // 超声波传感器的ECHO引脚
 const int ECHO_PIN_BACK = 19; // 超声波传感器的ECHO引脚
 const int ECHO_PIN_LEFT = 20; // 超声波传感器的ECHO引脚
 const int ECHO_PIN_RIGHT = 21; // 超声波传感器的ECHO引脚
+const int threshold_distance = 10; //超过10cm阈值停车
 
 const long DISTANCE_THRESHOLD = 10;  // 距离阈值（厘米）
 const int WHEEL_MAX_SPEED = 112.5;  //轮子最大速度
@@ -39,6 +41,7 @@ volatile bool g_is_measurement_done_left = false;  // 测距完成标志
 volatile bool g_is_measurement_done_right = false;  // 测距完成标志
 unsigned long g_imm_stop_start_time = 0;
 bool g_is_imm_stop_active = false;
+
 // 全局单例以及全局变量
 
 // Command info 命令信息
@@ -88,10 +91,10 @@ void Making_Decision();
 void Execute_Command();
 void Feed_Back();
 void Control_Motors();
-long Measure_Distance_Front();
-long Measure_Distance_Back();
-long Measure_Distance_Left();
-long Measure_Distance_Right();
+long Get_Ultrasonic_Sensor_Data_Front();
+long Get_Ultrasonic_Sensor_Data_Back();
+long Get_Ultrasonic_Sensor_Data_Left();
+long Get_Ultrasonic_Sensor_Data_Right();
 void Echo_ISR_Front();
 void Echo_ISR_Back();
 void Echo_ISR_Left();
@@ -155,11 +158,12 @@ void setup() {
 }
 
 void loop() {
+
   Process_Command();     // 处理命令
   Get_Sensor_Data();     // 获取传感器数据
   Making_Decision();     // 根据数据做出决策
   Execute_Command();     // 执行命令
-  Feed_Back();
+  //Feed_Back();
   
 }
 /*==================================== Loop Function =======================================*/
@@ -209,15 +213,114 @@ void Process_Command() {
 void Get_Sensor_Data() {
   //Serial.println("Measuring...");
   #if USE_ULTRASONIC
-  ultrasonic_data.distance_front = Measure_Distance_Front();  // 测量前方距离
-  ultrasonic_data.distance_back = Measure_Distance_Back();  // 测量前方距离
-  ultrasonic_data.distance_left = Measure_Distance_Left();  // 测量前方距离
-  ultrasonic_data.distance_right = Measure_Distance_Right();  // 测量前方距离
+  Get_Ultrasonic_Sensor_Data();
   #endif
+
   #if USE_IMU
   Get_IMU_Data();
   #endif
 }
+
+void Get_Ultrasonic_Sensor_Data(){
+  Serial.println("running ultrasonic sensor!");
+  if(millis() - last_trigger_time >= 100){
+    Trigger_Ultrasonic();
+    last_trigger_time = millis();
+    Serial.println("last_trigger_time:");
+    Serial.println(last_trigger_time);
+    ultrasonic_data.distance_front=Get_Ultrasonic_Sensor_Data_Front();
+    ultrasonic_data.distance_back=Get_Ultrasonic_Sensor_Data_Back();
+    ultrasonic_data.distance_left=Get_Ultrasonic_Sensor_Data_Left();
+    ultrasonic_data.distance_right=Get_Ultrasonic_Sensor_Data_Right();
+  }
+}
+// 获取前置超声波传感器距离数据
+long Get_Ultrasonic_Sensor_Data_Front(){
+  float distance = 0;
+
+
+  //测量四个方向的距离
+  if(!g_is_measurement_done_front){
+    g_is_measurement_done_front=true;
+    unsigned long duration = end_time_front - start_time;
+    distance = (duration * 0.0343) / 2;
+
+    Serial.println("Front distance:");
+    Serial.println(distance);
+
+    if(distance < threshold_distance){
+      command_data.imm_stop_flag = true;
+      Serial.println("Warning: There is obstacle in front of you!");
+    }
+  }
+
+
+  return distance;
+
+
+}
+
+// 获取后置超声波传感器距离数据
+long Get_Ultrasonic_Sensor_Data_Back(){
+  //每秒测量10次距离
+  float distance = 0;
+
+  if(!g_is_measurement_done_back){
+    g_is_measurement_done_back=true;
+    unsigned long duration = end_time_back - start_time;
+    distance = (duration * 0.0343) / 2;
+
+    Serial.println("Back distance:");
+    Serial.println(distance);
+
+    if(distance < threshold_distance){
+      command_data.imm_stop_flag = true;
+      Serial.println("Warning: There is obstacle behind you!");
+    }
+  }
+  return distance;
+}
+
+// 获取左置超声波传感器距离数据
+long Get_Ultrasonic_Sensor_Data_Left(){
+  float distance = 0;
+
+  if(!g_is_measurement_done_left){
+    g_is_measurement_done_left=true;
+    unsigned long duration = end_time_left - start_time;
+    distance = (duration * 0.0343) / 2;
+
+    Serial.println("Left distance:");
+    Serial.println(distance);
+
+    if(distance < threshold_distance){
+      command_data.imm_stop_flag = true;
+      Serial.println("Warning: There is obstacle on your left!");
+    }
+  }
+  return distance;
+}
+
+// 获取右置超声波传感器距离数据
+long Get_Ultrasonic_Sensor_Data_Right(){
+  float distance = 0;
+
+  if(!g_is_measurement_done_right){
+    g_is_measurement_done_right=true;
+    unsigned long duration = end_time_right - start_time;
+    distance = (duration * 0.0343) / 2;
+
+    Serial.println("Right distance:");
+    Serial.println(distance);
+
+    if(distance < threshold_distance){
+      command_data.imm_stop_flag = true;
+      Serial.println("Warning: There is obstacle on your right!");
+    }
+  }
+  return distance;
+}
+
 
 // 根据传感器数据做出决策
 void Making_Decision() {
@@ -363,112 +466,113 @@ void Control_Motors() {
 
 
 // 测距，若距离小于10cm则立刻停车
-long Measure_Distance_Front() {
-  //Serial.println("Measure_Distance_Front");
-  // 如果测距完成
-  if (g_is_measurement_done_front) {
-    // 计算脉冲持续时间
-    long duration = end_time_front - start_time;
-    // 计算距离，单位为厘米
-    long distance = duration * 0.034 / 2;
+// long Measure_Distance_Front() {
+//   //Serial.println("Measure_Distance_Front");
+//   // 如果测距完成
+//   if (g_is_measurement_done_front) {
+//     // 计算脉冲持续时间
+//     long duration = end_time_front - start_time;
+//     // 计算距离，单位为厘米
+//     long distance = duration * 0.034 / 2;
 
-    // 打印距离到串口
-    //Serial.print("Distance: ");
-    //Serial.print(distance);
-    //Serial.println(" cm");
+//     // 打印距离到串口
+//     //Serial.print("Distance: ");
+//     //Serial.print(distance);
+//     //Serial.println(" cm");
   
-    // 重置测距完成标志
-    g_is_measurement_done_front = false;
-    return distance;
-  }
-  // 触发一次超声波测距
-  Trigger_Ultrasonic();
-  delay(100); // 每秒测量10次
-  return 9999; // 如果测距未完成，返回一个大值
-}
+//     // 重置测距完成标志
+//     g_is_measurement_done_front = false;
+//     return distance;
+//   }
+//   // 触发一次超声波测距
+//   Trigger_Ultrasonic();
+//   delay(100); // 每秒测量10次
+//   return 9999; // 如果测距未完成，返回一个大值
+// }
 
-// 测距，若距离小于10cm则立刻停车
-long Measure_Distance_Back() {
-  // 如果测距完成
-  if (g_is_measurement_done_back) {
-    // 计算脉冲持续时间
-    long duration = end_time_back - start_time;
-    // 计算距离，单位为厘米
-    long distance = duration * 0.034 / 2;
+// // 测距，若距离小于10cm则立刻停车
+// long Measure_Distance_Back() {
+//   // 如果测距完成
+//   if (g_is_measurement_done_back) {
+//     // 计算脉冲持续时间
+//     long duration = end_time_back - start_time;
+//     // 计算距离，单位为厘米
+//     long distance = duration * 0.034 / 2;
 
-    // 打印距离到串口
-    //Serial.print("Distance: ");
-    //Serial.print(distance);
-    //Serial.println(" cm");
+//     // 打印距离到串口
+//     //Serial.print("Distance: ");
+//     //Serial.print(distance);
+//     //Serial.println(" cm");
   
-    // 重置测距完成标志
-    g_is_measurement_done_back = false;
-    return distance;
-  }
-  // 触发一次超声波测距
-  Trigger_Ultrasonic();
-  delay(100); // 每秒测量10次
-  return 9999; // 如果测距未完成，返回一个大值
-}
+//     // 重置测距完成标志
+//     g_is_measurement_done_back = false;
+//     return distance;
+//   }
+//   // 触发一次超声波测距
+//   Trigger_Ultrasonic();
+//   delay(100); // 每秒测量10次
+//   return 9999; // 如果测距未完成，返回一个大值
+// }
 
-// 测距，若距离小于10cm则立刻停车
-long Measure_Distance_Left() {
-  // 如果测距完成
-  if (g_is_measurement_done_left) {
-    // 计算脉冲持续时间
-    long duration = end_time_left - start_time;
-    // 计算距离，单位为厘米
-    long distance = duration * 0.034 / 2;
+// // 测距，若距离小于10cm则立刻停车
+// long Measure_Distance_Left() {
+//   // 如果测距完成
+//   if (g_is_measurement_done_left) {
+//     // 计算脉冲持续时间
+//     long duration = end_time_left - start_time;
+//     // 计算距离，单位为厘米
+//     long distance = duration * 0.034 / 2;
 
-    // 打印距离到串口
-    //Serial.print("Distance: ");
-    //Serial.print(distance);
-    //Serial.println(" cm");
+//     // 打印距离到串口
+//     //Serial.print("Distance: ");
+//     //Serial.print(distance);
+//     //Serial.println(" cm");
   
-    // 重置测距完成标志
-    g_is_measurement_done_left = false;
-    return distance;
-  }
-  // 触发一次超声波测距
-  Trigger_Ultrasonic();
-  delay(100); // 每秒测量10次
-  return 9999; // 如果测距未完成，返回一个大值
-}
+//     // 重置测距完成标志
+//     g_is_measurement_done_left = false;
+//     return distance;
+//   }
+//   // 触发一次超声波测距
+//   Trigger_Ultrasonic();
+//   delay(100); // 每秒测量10次
+//   return 9999; // 如果测距未完成，返回一个大值
+// }
 
-// 测距，若距离小于10cm则立刻停车
-long Measure_Distance_Right() {
+// // 测距，若距离小于10cm则立刻停车
+// long Measure_Distance_Right() {
   
-  // 如果测距完成
-  if (g_is_measurement_done_right) {
-    // 计算脉冲持续时间
-    long duration = end_time_right - start_time;
-    // 计算距离，单位为厘米
-    long distance = duration * 0.034 / 2;
+//   // 如果测距完成
+//   if (g_is_measurement_done_right) {
+//     // 计算脉冲持续时间
+//     long duration = end_time_right - start_time;
+//     // 计算距离，单位为厘米
+//     long distance = duration * 0.034 / 2;
 
-    // 打印距离到串口
-    //Serial.print("Distance: ");
-    //Serial.print(distance);
-    //Serial.println(" cm");
+//     // 打印距离到串口
+//     //Serial.print("Distance: ");
+//     //Serial.print(distance);
+//     //Serial.println(" cm");
   
-    // 重置测距完成标志
-    g_is_measurement_done_right = false;
-    return distance;
-  }
-  // 触发一次超声波测距
-  Trigger_Ultrasonic();
-  delay(100); // 每秒测量10次
-  return 9999; // 如果测距未完成，返回一个大值
-}
+//     // 重置测距完成标志
+//     g_is_measurement_done_right = false;
+//     return distance;
+//   }
+//   // 触发一次超声波测距
+//   Trigger_Ultrasonic();
+//   delay(100); // 每秒测量10次
+//   return 9999; // 如果测距未完成，返回一个大值
+// }
 
 // 中断服务程序，处理Echo引脚的上升沿和下降沿
 void Echo_ISR_Front() {
+
   if (digitalRead(ECHO_PIN_FRONT) == HIGH) {
     // Echo引脚上升沿，中断开始计时
     start_time = micros();       // 记录脉冲开始时间
   } else {
     // Echo引脚下降沿，中断结束计时
     end_time_front = micros();         // 记录脉冲结束时间
-    g_is_measurement_done_front = true;   // 设置测距完成标志
+    g_is_measurement_done_front = false;   // 设置测距完成标志
   }
 }
 
@@ -480,7 +584,7 @@ void Echo_ISR_Back() {
   } else {
     // Echo引脚下降沿，中断结束计时
     end_time_back = micros();         // 记录脉冲结束时间
-    g_is_measurement_done_back = true;   // 设置测距完成标志
+    g_is_measurement_done_back = false;   // 设置测距完成标志
   }
 }
 
@@ -492,7 +596,7 @@ void Echo_ISR_Left() {
   } else {
     // Echo引脚下降沿，中断结束计时
     end_time_left = micros();         // 记录脉冲结束时间
-    g_is_measurement_done_left = true;   // 设置测距完成标志
+    g_is_measurement_done_left = false;   // 设置测距完成标志
   }
 }
 
@@ -504,9 +608,12 @@ void Echo_ISR_Right() {
   } else {
     // Echo引脚下降沿，中断结束计时
     end_time_right = micros();         // 记录脉冲结束时间
-    g_is_measurement_done_right = true;   // 设置测距完成标志
+    g_is_measurement_done_right = false;   // 设置测距完成标志
   }
 }
+
+
+
 
 // 发送超声波脉冲
 void Trigger_Ultrasonic() {
@@ -515,10 +622,6 @@ void Trigger_Ultrasonic() {
   digitalWrite(TRIG_PIN, HIGH);   // 发送高电平脉冲，持续10微秒
   delayMicroseconds(10);         // 等待10微秒
   digitalWrite(TRIG_PIN, LOW);    // 结束脉冲，恢复低电平
-  g_is_measurement_done_front = false;
-  g_is_measurement_done_back = false;
-  g_is_measurement_done_left = false;
-  g_is_measurement_done_right = false;
 }
 
 /*==================================== IMU Part =======================================*/
@@ -532,7 +635,7 @@ void Get_IMU_Data() {
 
   // 获取MPU6050的加速度和陀螺仪数据
   mpu.getMotion6(&imu_data.accX, &imu_data.accY, &imu_data.accZ, &imu_data.gyroX, &imu_data.gyroY, &imu_data.gyroZ);
-
+  Serial.print("MPU running!");
   // 计算加速度的角度
   double accAngleX = atan2((double)imu_data.accY, (double)imu_data.accZ) * RAD_TO_DEG;
   double accAngleY = atan2((double)imu_data.accX, (double)imu_data.accZ) * RAD_TO_DEG;

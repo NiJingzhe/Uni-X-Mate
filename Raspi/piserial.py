@@ -21,3 +21,6 @@ class piSerial:
         
     def reset_input_buffer(self):
         self.ser.reset_input_buffer()
+        
+    def reset_output_buffer(self):
+        self.ser.reset_output_buffer()

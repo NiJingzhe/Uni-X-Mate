@@ -9,6 +9,7 @@ class VideoCamera(object):
         self.width = width
         self.height = height
         self.capture = cv.VideoCapture(self.capture_source, cv.CAP_V4L2)
+        #self.capture = cv.VideoCapture(self.capture_source)
         if not self.capture.isOpened():
             raise Exception("不能打开摄像头")
         self.capture.set(cv.CAP_PROP_FRAME_WIDTH, self.width)

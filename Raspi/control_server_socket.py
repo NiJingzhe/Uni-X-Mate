@@ -4,13 +4,14 @@ import struct
 from enum import Enum
 from piserial import piSerial
 import serial
+import json
 
 # Constants
 HOST = '0.0.0.0'  # Listen on all interfaces
 PORT = 5001       # Port for socket server
 
-SERIAL_PORT = '/dev/ttyACM0'
-SERIAL_BAUDRATE = 9600
+SERIAL_PORT = 'com6'
+SERIAL_BAUDRATE = 115200
 
 # Enum for commands
 class COMMANDS(Enum):
@@ -32,46 +33,16 @@ def handle_client_connection(client_socket):
     """Handle incoming socket connection."""
     try:
         while True:
-            message = client_socket.recv(1024).decode('utf-8')
+            message = client_socket.recv(1024)
             if not message:
                 break
             
-            # Parse the message
-            if "w" in message:
-                forward_back = 1
-            elif "s" in message:
-                forward_back = -1
-            else:
-                forward_back = 0
+            print("遥控服务端收到: ", message)
+
+            command_stream_bytes = message
             
-            if "a" in message:
-                left_right = 1
-            elif "d" in message:
-                left_right = -1
-            else:
-                left_right = 0
-
-            # Build command byte stream
-            command_byte = COMMANDS.MOVE.value.to_bytes(1, 'big')
-            forward_back_byte = struct.pack('b', forward_back)
-            left_right_byte = struct.pack('b', left_right)
-            command_stream_bytes = command_byte + forward_back_byte + left_right_byte
-
-            try:
-                if SERIAL_ENABLE:
-                    pi_serial.write(command_stream_bytes)
-                    pi_serial.reset_input_buffer()
-                    pi_serial.reset_output_buffer()
-                    feed_back = pi_serial.readline()
-                    client_socket.sendall(feed_back.encode('utf-8'))
-                else:
-                    client_socket.sendall(b"Serial not enabled")
-            except serial.SerialTimeoutException:
-                client_socket.sendall(b"Serial timeout occurred")
-            except serial.SerialException as e:
-                client_socket.sendall(f"Serial communication error: {e}".encode('utf-8'))
-            except Exception as e:
-                client_socket.sendall(f"Unexpected error: {e}".encode('utf-8'))
+            feed_back = {"self_check_result" : 1}
+            client_socket.sendall(json.dumps(feed_back).encode('utf-8'))
 
     finally:
         client_socket.close()

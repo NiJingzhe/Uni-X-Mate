@@ -18,7 +18,7 @@ def get_key_state():
     else:
         return ""
 
-def remote_control_socket(target_ip, target_port, movement_info_queue):
+def remote_control_socket(target_ip, target_port, robot_state_info_queue):
     host = target_ip
     port = target_port
     print("遥控器已启动")
@@ -29,53 +29,33 @@ def remote_control_socket(target_ip, target_port, movement_info_queue):
 
         while not keyboard.is_pressed("p"):
 
-            # if keyboard.is_pressed('w'):
-            #     pressed_key = 'ww'
-            #     print(pressed_key.encode('utf-8'))
-            #     client_socket.send(pressed_key.encode('utf-8'))
-            # elif keyboard.is_pressed('s'):
-            #     pressed_key = 'ss'
-            #     print(pressed_key.encode('utf-8'))
-            #     client_socket.send(pressed_key.encode('utf-8'))
-            # elif keyboard.is_pressed('a'):
-            #     pressed_key = 'aa'
-            #     print(pressed_key.encode('utf-8'))
-            #     client_socket.send(pressed_key.encode('utf-8'))
-            # elif keyboard.is_pressed('d'):
-            #     pressed_key = 'dd'
-            #     print(pressed_key.encode('utf-8'))
-            #     client_socket.send(pressed_key.encode('utf-8'))
-            # elif keyboard.is_pressed("w") and keyboard.is_pressed()
-            # else:
-            #     pressed_key = ''
+        #     pressed_key = ''
+        #     speed = 0
+        #     if keyboard.is_pressed('w'):
+        #         pressed_key += 'w'
+        #     elif keyboard.is_pressed('s'):
+        #         pressed_key += 's'
+        #     else:
+        #         pressed_key += ' '
 
-            pressed_key = ''
-            speed = 0
-            if keyboard.is_pressed('w'):
-                pressed_key += 'w'
-            elif keyboard.is_pressed('s'):
-                pressed_key += 's'
-            else:
-                pressed_key += ' '
+        #     if keyboard.is_pressed('a'):
+        #         pressed_key += 'a'
+        #     elif keyboard.is_pressed('d'):
+        #         pressed_key += 'd'
+        #     else:
+        #         pressed_key += ' '
 
-            if keyboard.is_pressed('a'):
-                pressed_key += 'a'
-            elif keyboard.is_pressed('d'):
-                pressed_key += 'd'
-            else:
-                pressed_key += ' '
+        #     client_socket.send(pressed_key.encode('utf-8'))
 
-            client_socket.send(pressed_key.encode('utf-8'))
-
-            #print("send time is : ", end_time - start_time)
+        #     #print("send time is : ", end_time - start_time)
             
             try:
-                #feedback = client_socket.recv(1024).decode('utf-8')
-                #print(feedback)
-                #movement_info_queue.put(feedback)
+                feedback = client_socket.recv(1024).decode('utf-8')
+                print(feedback)
+                robot_state_info_queue.put(feedback)
 
-                if movement_info_queue.qsize() > 1:
-                    movement_info_queue.get()
+                if robot_state_info_queue.qsize() > 1:
+                    robot_state_info_queue.get()
             except Exception as e:
                 print(f"遥控器错误: {e}")
 

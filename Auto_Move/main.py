@@ -170,6 +170,8 @@ def process_target_process_action(self: State):
                     command_queue.put(command_result)
                     while command_queue.qsize() > 1:
                         command_queue.get()
+                    # 绝对不应期
+                    time.sleep(0.2)
                     break
 
             if not detected_flag:
@@ -179,9 +181,12 @@ def process_target_process_action(self: State):
                 while command_queue.qsize() > 1:
                     command_queue.get()
                     # time.sleep(0.1)
+                # 绝对不应期
+                time.sleep(0.2)
 
     command_result['command'] = COMMAND.GRAB.value
     command_queue.put(command_result)
+
 
     while command_queue.qsize() > 1:
         command_queue.get()
@@ -193,7 +198,9 @@ def process_target_process_action(self: State):
 
     while command_queue.qsize() > 1:
         command_queue.get()
-
+    # 绝对不应期
+    time.sleep(0.2)
+    
     find_person = False
     while not find_person and not frame_queue.empty():
         frame = frame_queue.get()
@@ -211,7 +218,7 @@ def process_target_process_action(self: State):
                     command_queue.put(command_result)
                     while command_queue.qsize() > 1:
                         command_queue.get()
-                        
+
     command_result['command'] = COMMAND.GOTO_TARGET.value
     command_result['distance'] = 0.5
     command_result['angle'] = 0

@@ -184,6 +184,7 @@ def process_target_process_action(self: State):
                 # 绝对不应期
                 time.sleep(0.2)
 
+    command_result = {}
     command_result['command'] = COMMAND.GRAB.value
     command_queue.put(command_result)
 
@@ -193,6 +194,7 @@ def process_target_process_action(self: State):
 
     time.sleep(0.5)
 
+    command_result = {}
     command_result['command'] = COMMAND.FIND_TAG.value
     command_queue.put(command_result)
 

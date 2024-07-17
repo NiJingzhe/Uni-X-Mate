@@ -78,12 +78,13 @@ def detect_label(frame, label_info: dict, bounding_box: tuple = None) -> np.ndar
         if cv2.contourArea(contour) < min_area:
             continue
 
-        epsilon = 0.02 * cv2.arcLength(contour, True)
+        epsilon = 0.05 * cv2.arcLength(contour, True)
         approx = cv2.approxPolyDP(contour, epsilon, True)
 
         if len(approx) == 4:
             # 检测到四边形，计算重叠面积
             x, y, w, h = cv2.boundingRect(approx)
+            
             if bounding_box is not None:
                 x1, y1, x2, y2 = bounding_box
                 overlap_x1 = max(x1, x)
@@ -94,6 +95,8 @@ def detect_label(frame, label_info: dict, bounding_box: tuple = None) -> np.ndar
                 if overlap_area > max_overlap_area:
                     max_overlap_area = overlap_area
                     best_contour = approx
+            else:
+                best_contour = approx
 
     if best_contour is not None:
         # 返回重叠面积最大的轮廓的角点并排序
@@ -104,7 +107,7 @@ def detect_label(frame, label_info: dict, bounding_box: tuple = None) -> np.ndar
 
     return None
 
-def rotation_matrix_to_euler_angles(R):
+def rotation_matrix_to_euler_angles(R : cv2.Mat) -> np.ndarray:
     """
     将旋转矩阵转换为欧拉角
     """
@@ -123,6 +126,29 @@ def rotation_matrix_to_euler_angles(R):
 
     return np.array([x, y, z])
 
+def euler_angles_to_rotation_matrix(euler_angles : np.ndarray) -> cv2.Mat:
+    """
+    将欧拉角转换为旋转矩阵
+    """
+    x, y, z = euler_angles
+
+    # 计算各个轴的旋转矩阵
+    R_x = np.array([[1, 0, 0],
+                    [0, np.cos(x), -np.sin(x)],
+                    [0, np.sin(x), np.cos(x)]])
+
+    R_y = np.array([[np.cos(y), 0, np.sin(y)],
+                    [0, 1, 0],
+                    [-np.sin(y), 0, np.cos(y)]])
+
+    R_z = np.array([[np.cos(z), -np.sin(z), 0],
+                    [np.sin(z), np.cos(z), 0],
+                    [0, 0, 1]])
+
+    # 旋转矩阵的乘积
+    R = np.dot(R_z, np.dot(R_y, R_x))
+
+    return R
 
 def low_pass_filter(new_point, prev_filtered_point, alpha):
     """
@@ -184,8 +210,7 @@ def calc_pos_and_trans(frame, label_info: dict, bounding_box: tuple = None, debu
     if corners is not None:
         # 使用PnP求解相机相对于标签的位姿
         ret, rvec, tvec = cv2.solvePnP(
-            geo_info, corners, camera_matrix, dist_coeffs)
-
+                geo_info, corners, camera_matrix, dist_coeffs)
         if ret:
             label_info["detected"] = True
             # 计算旋转矩阵
@@ -214,183 +239,3 @@ def calc_pos_and_trans(frame, label_info: dict, bounding_box: tuple = None, debu
             return None, None, None, None
     else:
         return None, None, None, None
-
-
-# plt.ion()
-# fig, ax = plt.subplots()
-# ax.set_xlim(-0.35, 0.35)
-# ax.set_ylim(-0.35, 0.35)
-# last_time = time.time()
-
-
-# def mono_cam_orb(frame_queue: multiprocessing.Queue, label_list: list,
-#                  trajectory_list: multiprocessing.Queue, debug=False):
-#     frame = None
-#     while not frame_queue.empty():
-#         frame = frame_queue.get()
-
-#         global count
-#         global max_count
-#         global cam_init_pos_global
-#         global cam_init_rotation_global
-#         global cam_current_pos_global
-#         global cam_current_rotation_global
-#         global last_time
-#         global local_filtered_trajectory
-
-#         if frame is not None:
-#             if count < max_count:
-
-#                 for label in label_list:
-#                     cam_pos_to_label, cam_rotation_to_label, _, _ = calc_pos_and_trans(
-#                         frame, label, debug=debug)
-#                     if cam_pos_to_label is not None and cam_rotation_to_label is not None:
-#                         # 先把标签相对相机的位置记录下来
-#                         label["is origin"] = True
-#                         cam_init_pos_global = cam_pos_to_label
-#                         cam_init_rotation_global = cam_rotation_to_label
-#                         cam_current_pos_global = cam_init_pos_global
-#                         cam_current_rotation_global = cam_init_rotation_global
-#                         count += 1
-#                         break
-#                 if debug:
-#                     cv2.imshow('frame', frame)
-
-#             else:
-#                 # 开始循环检查每个标签
-#                 possible_cam_pos_global = []
-#                 possible_cam_rot_global = []
-#                 for label in label_list:
-#                     # 检查到未知的标签
-#                     if np.array_equal(label["pos to global"], np.array([0, 0, 0])) and not label["is origin"]:
-#                         print("++++++++++++++++++++++++++++++++未知标签++++++++++++++++++++++++++++++++")
-#                         print("++++++++++++++++++++++++++++++++未知标签++++++++++++++++++++++++++++++++")
-#                         print("++++++++++++++++++++++++++++++++未知标签++++++++++++++++++++++++++++++++")
-#                         _, _, label_pos_to_cam, label_rotation_to_cam = calc_pos_and_trans(
-#                             frame, label, debug=debug)
-#                         if label_pos_to_cam is None or label_rotation_to_cam is None:
-#                             continue
-                        
-#                         label["rotation to global"] = cam_current_rotation_global @ label_rotation_to_cam
-#                         label["pos to global"] = cam_current_pos_global + cam_current_rotation_global @ label_pos_to_cam.T
-                        
-#                     # 检查到已知的标签
-#                     else:
-#                         cam_pos_to_label, cam_rotation_to_label, \
-#                             label_pos_to_cam, _ = calc_pos_and_trans(
-#                                 frame, label, debug=debug)
-#                         if cam_pos_to_label is None or cam_rotation_to_label is None:
-#                             continue
-                        
-#                         possible_cam_rot_global.append(
-#                             label["rotation to global"] @ cam_rotation_to_label)
-#                         possible_cam_pos_global.append(
-#                             label["pos to global"] +  label["rotation to global"] @ cam_pos_to_label.T)
-        
-                        
-#                 print("==="*50)
-#                 print(possible_cam_pos_global)
-#                 print("==="*50)
-
-#                 # 计算相机当前位姿
-#                 effect_value_num = 0
-#                 cam_current_pos_global = np.array([0, 0, 0], dtype=np.float64)
-#                 cam_current_rotation_global = np.eye(3)
-#                 for pos, rot in zip(possible_cam_pos_global, possible_cam_rot_global):
-#                     effect_value_num += 1
-#                     cam_current_pos_global += pos
-#                     cam_current_rotation_global += rot
-                    
-#                 if effect_value_num == 0:
-#                     print("no effective data")
-#                     continue
-#                 cam_current_pos_global /= effect_value_num
-#                 cam_current_rotation_global /= effect_value_num
-                
-#                 if len(local_filtered_trajectory) > 1:
-#                     cam_current_pos_global =  \
-#                         low_pass_filter(cam_current_pos_global, local_filtered_trajectory[-1], alpha)
-#                 else:
-#                     cam_current_pos_global =  \
-#                         low_pass_filter(cam_current_pos_global, cam_init_pos_global, alpha)
-                
-#                 # if is_abnormal_point(local_filtered_trajectory, cam_current_pos_global, time.time() - last_time):
-#                 #     continue
-                
-#                 local_filtered_trajectory.append(cam_current_pos_global)
-#                 last_time = time.time()
-                
-#                 print(
-#                     f"\r相机相对于原点的位姿 (XYZ): {cam_current_pos_global}, (Euler Angle): {rotation_matrix_to_euler_angles(cam_current_rotation_global) * 180 / np.pi}")
-#                 last_time = time.time()
-
-                
-
-#                 # 将trajectory队列中的内容设置为filtered trajectory
-#                 if g_trajectory_list_queue.qsize() > 0:
-#                     g_trajectory_list_queue.get()
-#                 trajectory_list.put(local_filtered_trajectory)
-            
-
-#                 if debug:
-#                     # 绘制相机位置和标签位置
-#                     ax.clear()
-
-#                     # 绘制相机轨迹
-#                     traj_arr = np.array(local_filtered_trajectory)
-#                     ax.plot(traj_arr[:, 0], -traj_arr[:, 2],
-#                             "k-", label='Camera Trajectory')
-#                     ax.scatter(traj_arr[-1, 0], -traj_arr[-1, 2], c='black',
-#                               marker='x', label='Current Camera Position')
-
-#                     # 绘制标签位置
-#                     for label in label_list:
-#                         hsv_color = label["hsv_range"]["lower"]
-#                         color = cv2.cvtColor(np.uint8([[hsv_color]]), cv2.COLOR_HSV2RGB)[0][0] / 255.0
-
-#                         label_pos = label["pos to global"]
-#                         ax.scatter(label_pos[0], -label_pos[2], c=[
-#                                    color], label=label["id"])
-
-#                     ax.legend()
-#                     plt.pause(0.01)
-                    
-#                     cv2.imshow('frame', frame)
-
-
-
-
-# g_frame_queue = multiprocessing.Queue()
-# g_trajectory_list_queue = multiprocessing.Queue()   
-# g_label_list = json.load(open('labels.json'))
-
-# if __name__ == "__main__":
-#     cap = cv2.VideoCapture(1)
-    
-#     for label in g_label_list:
-#         label["detected"] = False
-#         label["pos to global"] = np.array([0, 0, 0])
-#         label["rotation to global"] = np.eye(3)
-#         label["is origin"] = False
-
-    
-    
-#     while True:
-        
-#         ret, frame = cap.read()
-#         if not ret:
-#             print("相机未连接")
-#             exit(1)
-  
-        
-#         g_frame_queue.put(frame)
-        
-#         mono_cam_orb(g_frame_queue, g_label_list, g_trajectory_list_queue, True)
-#         if g_trajectory_list_queue.qsize() > 1:
-#             g_trajectory_list_queue.get()
-        
-#         if cv2.waitKey(1) & 0xFF == ord('q'):
-#             cv2.destroyAllWindows()
-#             cap.release()
-#             break
-    

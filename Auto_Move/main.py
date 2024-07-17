@@ -12,6 +12,8 @@ from V2T import get_voice_result
 from tele_camera import tele_camera
 from remote_control_socket import remote_control_socket
 from ai_detector import ai_detect, ai_detector_init
+from LLM import RobotGPT
+from TTS import GPTSoVits
 
 # 实例化状态
 init_state = State("init")
@@ -93,7 +95,7 @@ def init_process_action(self: State):
         # command_queue.put(command)
         print("***开机自检中***")
         # self.fsm.trigger_event(init_finished_event)
-
+    
     state = robo_state_queue.get()
     if state["robot_state"] == "正常":
         print("***自检成功***")
@@ -114,6 +116,8 @@ def idle_process_action(self: State):
 def listen_target_process_action(self: State):
 
     voice_command_queue = self.fsm.get_blackboard_data("voice_command_queue")
+    robot_gpt = RobotGPT()
+    tts_model = GPTSoVits("http://172.25.96.166:9880/tts/")
 
     voice_command = get_voice_result()
     # 尝试监听三次语音指令，如果三次都没有获取到，则进入自动游走状态
@@ -126,10 +130,22 @@ def listen_target_process_action(self: State):
         self.fsm.trigger_event(target_listen_nothing_event)
 
     # print("Voice command is : ", voice_command)
-
-    voice_command_queue.put(voice_command)
-
-    self.fsm.trigger_event(target_listen_finished_event)
+    user_said_content = voice_command["content"]
+    if user_said_content == "No object found":
+        tts_text = "Sorry but I can't find that object for you."
+        user_said_content_type = 1
+    else:
+        text_type_result = robot_gpt.get_command(user_said_content)
+        tts_text = text_type_result["content"]
+        user_said_content_type = text_type_result["command"]
+        
+    
+    # TTS 过程
+    tts_model.run(tts_text)
+    
+    if user_said_content_type == 0:
+        voice_command_queue.put(voice_command)
+        self.fsm.trigger_event(target_listen_finished_event)
 
 
 def process_target_process_action(self: State):
@@ -241,30 +257,33 @@ def process_target_process_action(self: State):
     self.fsm.trigger_event(target_process_finished_event)
 
 
-def listen_for_voice_commands(voice_command_queue, stop_event):
+def listen_for_voice_commands(voice_command_queue, stop_event : mtp.Event):
     while not stop_event.is_set():
+        print("Enter listen_for_voice_commands while loop")
         voice_command = get_voice_result()
         if voice_command:
             voice_command_queue.put(voice_command)
-            stop_event.set()  # 监听到语音指令后停止监听
-
+            stop_event.set()
 
 def auto_walk_process_action(self: State):
     frame_queue = self.fsm.get_blackboard_data("frame_queue")
     map_label_info = self.fsm.get_blackboard_data("map_label_info")
     voice_command_queue = self.fsm.get_blackboard_data("voice_command_queue")
     command_queue = self.fsm.get_blackboard_data("command_queue")
+    
+    #while not voice_command_queue.empty():
+    #    voice_command_queue.get()   
 
     stop_event = mtp.Event()
     listener_process = mtp.Process(
-        target=listen_for_voice_commands, args=(voice_command_queue, stop_event,))
+        target=listen_for_voice_commands, args=(voice_command_queue, stop_event, ))
     listener_process.start()
 
     while not stop_event.is_set():
         commamd = {"command": COMMAND.GOTO_TARGET.value,
                    "distance": 9999, "angle": 0}
         command_queue.put(commamd)
-        if command_queue.qsize() > 1:
+        while command_queue.qsize() > 1:
             command_queue.get()
             
         time.sleep(0.2)
@@ -292,6 +311,7 @@ init_state.set_process_action(init_process_action)
 idle_state.set_process_action(idle_process_action)
 listen_target_state.set_process_action(listen_target_process_action)
 process_target_state.set_process_action(process_target_process_action)
+auto_walk_state.set_process_action(auto_walk_process_action)
 
 g_frame_queue = mtp.Queue()
 g_robo_state_queue = mtp.Queue()

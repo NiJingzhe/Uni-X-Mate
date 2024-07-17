@@ -71,7 +71,7 @@ class V2T:
             objects = self.extract_objects(result["transcription"])
             objects = list(set(objects))
             print("Objects in text:", objects)
-            return objects
+            return {"objects" : objects, "content" : result["transcription"]}
         else:
             print("I didn't catch that. Error: " + result["error"])
-            return []
+            return None

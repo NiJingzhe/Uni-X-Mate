@@ -12,7 +12,7 @@ def remote_control_socket(target_ip, target_port, robot_state_info_queue, comman
     try:
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect((host, port))
-        client_socket.settimeout(0.5)
+        client_socket.settimeout(20)
 
         while not keyboard.is_pressed("p"):
             #time.sleep(0.1)

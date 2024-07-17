@@ -257,15 +257,17 @@ def auto_walk_process_action(self: State):
 
     stop_event = mtp.Event()
     listener_process = mtp.Process(
-        target=listen_for_voice_commands, args=(voice_command_queue, stop_event))
+        target=listen_for_voice_commands, args=(voice_command_queue, stop_event,))
     listener_process.start()
 
     while not stop_event.is_set():
         commamd = {"command": COMMAND.GOTO_TARGET.value,
-                   "distance": 0.5, "angle": 0}
+                   "distance": 9999, "angle": 0}
         command_queue.put(commamd)
         if command_queue.qsize() > 1:
             command_queue.get()
+            
+        time.sleep(0.2)
         # if not frame_queue.empty():
         #     frame = frame_queue.get()
         #     # 循环检查每个世界标签，并求解相机位姿

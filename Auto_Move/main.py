@@ -122,13 +122,14 @@ def listen_target_process_action(self: State):
     voice_command = get_voice_result()
     # 尝试监听三次语音指令，如果三次都没有获取到，则进入自动游走状态
     count = 0
-    while not voice_command and count < 3:
+    while not voice_command and count < 2:
         voice_command = get_voice_result()
         count += 1
 
     if not voice_command:
         self.fsm.trigger_event(target_listen_nothing_event)
-
+        return 
+    
     # print("Voice command is : ", voice_command)
     user_said_content = voice_command["content"]
     if user_said_content == "No object found":
@@ -146,6 +147,7 @@ def listen_target_process_action(self: State):
     if user_said_content_type == 0:
         voice_command_queue.put(voice_command)
         self.fsm.trigger_event(target_listen_finished_event)
+        return
 
 
 def process_target_process_action(self: State):
@@ -162,7 +164,7 @@ def process_target_process_action(self: State):
     delta_x = 99999
     delta_y = 99999
 
-    while delta_x > 0.03 or delta_y > 0.43:
+    while delta_x > 0.03 or delta_y > 0.20:
         # time.sleep(0.2)
         command_result = {}
         if not frame_queue.empty():  # yolo是否是多线程的？问题1，当前画面中没有目标，yolo会一直检测，导致队列不为空，导致程序卡死
@@ -174,13 +176,17 @@ def process_target_process_action(self: State):
                     detected_flag = True
                     # print("***视野中有该物体***")
                     command_result['command'] = COMMAND.GOTO_TARGET.value
-                    command_result['distance'] = math.sqrt(
-                        result["position"][0] ** 2 + result["position"][1] ** 2
+                    command_result['distance'] = float(
+                        math.sqrt(
+                            result["position"][0] ** 2 + result["position"][1] ** 2
+                        )
                     )
                     command_result['angle'] = math.atan2(
                         result["position"][1], result["position"][0]) - 1.57
-                    command_result['angle'] = command_result['angle'] / \
+                    command_result['angle'] = float(
+                        command_result['angle'] / 
                         math.pi * 180
+                    )
                     delta_x, delta_y = result["position"]
                     # print("Command 0 被放入")
                     command_queue.put(command_result)
@@ -194,11 +200,11 @@ def process_target_process_action(self: State):
                 command_result['command'] = COMMAND.FIND_TAG.value
                 # print("Command 1 被放入")
                 command_queue.put(command_result)
-                while command_queue.qsize() > 1:
+                while command_queue.qsize() > 3:
                     command_queue.get()
                     # time.sleep(0.1)
                 # 绝对不应期
-                time.sleep(0.2)
+                #time.sleep(0.2)
 
     command_result = {}
     command_result['command'] = COMMAND.GRAB.value
@@ -286,7 +292,7 @@ def auto_walk_process_action(self: State):
         while command_queue.qsize() > 1:
             command_queue.get()
             
-        time.sleep(0.2)
+        #time.sleep(0.2)
         # if not frame_queue.empty():
         #     frame = frame_queue.get()
         #     # 循环检查每个世界标签，并求解相机位姿

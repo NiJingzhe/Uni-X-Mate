@@ -4,6 +4,11 @@ import time
 from utils import *
 import json
 
+def float_formatter(obj):
+    if isinstance(obj, float):
+        return format(obj, ".3f")
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
 def remote_control_socket(target_ip, target_port, robot_state_info_queue, command_queue):
     host = target_ip
     port = target_port
@@ -19,7 +24,17 @@ def remote_control_socket(target_ip, target_port, robot_state_info_queue, comman
             command = None
             while not command_queue.empty():    
                 command = command_queue.get()
-                command_str = json.dumps(command) + '\n'
+                command_bit = command["command"]
+                if command_bit == COMMAND.GOTO_TARGET.value:
+                    distance = command["distance"]
+                    angle = command["angle"]
+                    
+                    command_str = \
+                        f'{{"command":{command_bit}, "distance":{distance:.3f}, "angle":{angle:.3f}}}'
+                
+                else:
+                    command_str = f'{{"command":{command_bit}}}'                   
+                #command_str = json.dumps(command, default=float_formatter) + '\n'
                 print("遥控器发送： ", command_str)
                 client_socket.send(command_str.encode('utf-8'))
                 
@@ -47,4 +62,3 @@ def remote_control_socket(target_ip, target_port, robot_state_info_queue, comman
     finally:
         client_socket.close()
         print("遥控器线程终止。")
-        

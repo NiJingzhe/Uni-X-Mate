@@ -132,14 +132,13 @@ def listen_target_process_action(self: State):
     
     # print("Voice command is : ", voice_command)
     user_said_content = voice_command["content"]
-    if user_said_content == "No object found":
-        tts_text = "Sorry but I can't find that object for you."
-        user_said_content_type = 1
-    else:
+    if user_said_content:
         text_type_result = robot_gpt.get_command(user_said_content)
         tts_text = text_type_result["content"]
         user_said_content_type = text_type_result["command"]
-        
+    else:
+        tts_text = "Sorry but I can't find that object for you."
+        user_said_content_type = 1
     
     # TTS 过程
     tts_model.run(tts_text)

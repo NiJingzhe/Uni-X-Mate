@@ -9,7 +9,7 @@ def get_voice_result():
     result = speech2text.run()
     if result:
         if result["objects"] == []:
-            return {"object" : None, "in_memory" : False, "content" : "No object found"}
+            return {"object" : None, "in_memory" : False, "content" : result["content"]}
         for obj in result["objects"]:
             if not db.ifExist(obj):
                 return {"object" : obj, "in_memory" : False, "content" : result["content"]}
@@ -25,4 +25,4 @@ def get_voice_result():
                     }
                 return result_dict
     else:
-        return None
+        return {"object" : None, "in_memory" : False, "content" : None}

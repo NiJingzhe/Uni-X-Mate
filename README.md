@@ -23,4 +23,4 @@ Uni-X Mate, Always a helpful Universal Personal Assistant
  - THIS REPO IS ONLY FOR DEMOSTRATION PURPOSE!!!
 
  ## Demo Video
-<video src="./Video/final_version_compressed.mp4"></video>
+[![Watch the video](./Video/cover.png)](https://www.youtube.com/watch?v=SqcrQ0-hjPo)

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask App</title>
+    <script src="https://unpkg.com/vue@3"></script>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+    <script src="https://unpkg.com/element-plus"></script>
+</head>
+<body>
+    <div id="app">
+        <div id="header">GROUP 9</div>
+        <div id="info-board">
+            <img :src="teamIcon" alt="Racecar" style="margin-bottom: 20px">
+            <div id="gauge" style="width: 300px; height: 300px"></div>
+            <div>
+                <div class="info-item"><div>Speed: </div><div>{{ speed }} km/h</div></div>
+                <!-- <div class="info-item"><div>Front Distance: </div><div>{{ frontDistance }} m</div></div>
+                <div class="info-item"><div>Rear Distance: </div><div>{{ rearDistance }} m</div></div>
+                <div class="info-item"><div>Left Distance: </div><div>{{ leftDistance }} m</div></div>
+                <div class="info-item"><div>Right Distance: </div><div>{{ rightDistance }} m</div></div> -->
+            </div>
+
+        </div>
+        <!-- <div id="content">
+            <div id="image-container">
+                <img class="robot-icon" :src="robotIcon" alt="Robot Icon" style="border-radius: 12px">
+                <img v-if="imageUrl" :src="imageUrl" alt="Image">
+                <p v-else>Waiting for images...</p>
+            </div>
+        </div> -->
+        <div id="processed-image-container">
+            <img v-if="processedImageUrl" :src="processedImageUrl" alt="Processed Image">
+            <p v-else>No processed image available</p>
+            <div id="name-container">
+                <el-card class="box-card">
+                    <div slot="header" class="clearfix robot-header">
+                        <img :src="nameIcon" alt="Deep Learning Icon" style="width: 50px; margin: 0">
+                        <span style="font-size: 10pt">Name</span>
+                    </div>
+                    <div style="font-size: 18pt">{{ processedImageName }}</div>
+                </el-card>
+            </div>
+        </div>
+    </div>
+    <script>
+        const app = Vue.createApp({
+            data() {
+                return{
+                    imageUrl: '',
+                    speed: 0,
+                    frontDistance: 0,
+                    rearDistance: 0,
+                    leftDistance: 0,
+                    rightDistance: 0,
+                    teamIcon: '/get_local_image/logo.png',
+                    robotIcon: '/get_local_image/monitor.jpg',
+                    nameIcon: '/get_local_image/ID.png',
+                    // speedIcon: '/get_local_image/speed.png',
+                    processedImageUrl: '/get_local_image/ragdoll.jpg',
+                    processedImageName: 'Ragdoll Cat',
+                    gaugeChart: null
+                }
+            },
+            methods: {
+                initGauge() {
+                    const option = {
+                      tooltip: {
+                        formatter: '{a} <br/>{b} : {c}%'
+                      },
+                      series: [
+                        {
+                          name: 'Pressure',
+                          type: 'gauge',
+                          min: 0,
+                          max: 240,
+                          progress: {
+                            show: true
+                          },
+                          itemStyle: {
+                            color: '#e10c36',
+                            shadowColor: 'rgba(255,0,0,0.58)',
+                            shadowBlur: 10,
+                            shadowOffsetX: 2,
+                            shadowOffsetY: 2
+                          },
+                          detail: {
+                            valueAnimation: true,
+                            formatter: '{value} M/H',
+                            fontSize: 20,
+                              color: '#fff'
+                          },
+                            axisLabel: {
+                                color: 'inherit',
+                                distance: 14,
+                                fontSize: 10
+                            },
+                          data: [
+                            {
+                              value: 30,
+                            }
+                          ]
+                        }
+                      ]
+                    };
+
+                    console.log(document.getElementById('gauge'))
+                    this.gaugeChart = echarts.init(document.getElementById('gauge'));
+                    this.gaugeChart.setOption(option);
+                    setTimeout(function (){
+                        window.onresize = function () {
+                            this.gaugeChart.resize();
+                        }
+                    },200)
+                    console.log('1')
+                },
+                updateGauge(value) {
+                    if (this.gaugeChart) {
+                        this.gaugeChart.setOption({
+                            series: [{
+                                data: [{ value }]
+                            }]
+                        });
+                    }
+                },
+                fetchImage() {
+                    fetch('/get_image')
+                        .then(response => response.blob())
+                        .then(blob => {
+                            if (blob.size > 0) {
+                                this.imageUrl = URL.createObjectURL(blob);
+                            } else {
+                                if (this.imageUrl !== '') {
+                                    this.imageUrl = '';
+                                }
+                                this.imageUrl = '';
+                            }
+                        })
+                        .catch(error => console.error('Error fetching image:', error));
+                },
+                fetchSpeed() {
+                    fetch('/get_speed')
+                        .then(response => response.json())
+                        .then(data => {
+                            speed = parseInt(data.speed);
+                            this.speed = speed;
+                            this.updateGauge(this.speed);
+                        })
+                        .catch(error => console.error('Error fetching speed:', error));
+                },
+                fetchResult() {
+                    fetch('/get_result')
+                        .then(response => response.json())
+                        .then(data => {
+                            this.processedImageUrl = `data:image/jpeg;base64,${data.image}`;
+                            this.processedImageName = data.name;
+                        })
+                        .catch(error => console.error('Error fetching result:', error));
+                }
+
+            },
+            mounted() {
+                this.initGauge();
+                this.fetchImage();
+                this.fetchSpeed();
+                this.fetchResult();
+                setInterval(this.fetchImage, 50);  // 每0.2秒获取一次新图片
+                setInterval(this.fetchSpeed, 200)
+                setInterval(this.fetchResult, 200)
+            }
+        }).use(ElementPlus).mount('#app')
+    </script>
+
+</body>
+
+<style>
+    /* 全局样式 */
+    body {
+        margin: 0;
+        font-family: 'Roboto', sans-serif;
+        background: linear-gradient(to right, #1f1c2c, #928dab);
+        color: #fff;
+        display: flex;
+        min-height: 100vh;
+        align-items: center;
+        justify-content: center;
+    }
+    /* 整体布局样式 */
+    #app {
+        display: flex;
+        width: 100%;
+        max-width: 1400px;
+        height: 80vh;
+        background-color: transparent; /* 设置透明背景 */
+        border-radius: 12px;
+        overflow: hidden;
+        gap: 20px; /* 设置间隔 */
+    }
+    /* 左侧信息板样式 */
+    #info-board {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        /*justify-content: center;*/
+        width: 25%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-right: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+    }
+    /* 图片容器样式 */
+    #image-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 25%;
+        height: 100%;
+        /*background-color: rgba(255, 255, 255, 0.1);*/
+        padding: 20px;
+        /*border-right: 1px solid rgba(255, 255, 255, 0.2);*/
+        border-radius: 12px;
+    }
+    /* 处理后图像容器样式 */
+    #processed-image-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 90%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.3);
+        padding: 20px;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    /* 图片样式 */
+    #info-board img, #processed-image-container img {
+        width: 100%;
+        max-width: 600px;
+        margin-bottom: 20px;
+        border-radius: 12px;
+        transition: transform 0.3s ease;
+    }
+    /* 信息项样式 */
+    .info-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 1.2em;
+        margin: 5px 0;
+    }
+    /* 右侧内容样式 */
+    #content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 75%;
+        height: 100%;
+        padding: 20px;
+        background-color: rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    /* 图片容器和名称容器样式 */
+    #image-container, #name-container {
+        width: 100%;
+        max-width: 600px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    /* 图片样式 */
+    #image-container {
+        position: relative;
+    }
+    #image-container img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 12px;
+        transition: transform 0.3s ease;
+    }
+    /* 图片悬停效果 */
+    #image-container img:hover {
+        transform: scale(1.05);
+    }
+    /* 机器人图标样式 */
+    .robot-icon {
+        width: 50px;
+        height: 50px;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        opacity: 0.8;
+    }
+    /* 卡片样式 */
+    .box-card {
+        width: 100%;
+    }
+    /* 机器人头部样式 */
+    .robot-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    .robot-header img {
+        width: 40px;
+        height: 40px;
+    }
+    .robot-header span {
+        font-size: 1.2em;
+    }
+    .info-item {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 4px 4px 6px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(90deg, #ff6b6b, #ffde7d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradient 3s infinite linear;
+}
+    @keyframes gradient {
+        0% {
+            background-position: 0% 50%;
+        }
+        100% {
+            background-position: 100% 50%;
+        }
+    }
+    #header {
+        font-family: 'Orbitron', sans-serif;
+        position: absolute;
+        top: 10px;
+        left: 20px;
+        font-size: 30pt;
+        font-weight: 700;
+        color: #fff;
+    }
+
+</style>
+</html>

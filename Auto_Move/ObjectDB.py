@@ -4,7 +4,7 @@ import pickle
 
 
 class ObjectDatabase:
-    def __init__(self, host='172.25.103.199', database='postgres', user='postgres', password='123456'):
+    def __init__(self, host='172.25.106.21', database='postgres', user='postgres', password='123456'):
         self.conn = psycopg2.connect(
             host=host,  # 数据库服务器地址
             database=database,  # 数据库名

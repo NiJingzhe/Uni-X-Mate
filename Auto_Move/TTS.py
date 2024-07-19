@@ -4,7 +4,7 @@ import io
 import pyaudio
 
 DEFAULT ={
-    "ref_audio_path": "F:\coding\GPT-SoVITS-Fast\\2.闲聊·聆听_趴在草地上，能听见大地的心跳。.mp3",
+    "ref_audio_path": "D:\Sustech\JuniorSemester_2nd\\nus\Phase2\Project\ProjectCode\\2.闲聊·聆听_趴在草地上，能听见大地的心跳。.mp3",
     "prompt_text": "趴在草地上，能听见大地的心跳。",
     "prompt_lang": "zh",
     "batch_size": 16,

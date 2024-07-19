@@ -8,7 +8,7 @@ import time
 import multiprocessing as mtp
 import json
 import keyboard
-from V2T import get_voice_result
+from V2T import *
 from tele_camera import tele_camera
 from remote_control_socket import remote_control_socket
 from ai_detector import ai_detect, ai_detector_init
@@ -75,6 +75,8 @@ def FSM_decider_process(
     RoboFSM.add_blackboard_data("model_path", model_path)
     RoboFSM.add_blackboard_data("obj_label_info", obj_label_info)
     RoboFSM.add_blackboard_data("map_label_info", map_label_info)
+    RoboFSM.add_blackboard_data("no_cmd_counter", 0)
+    RoboFSM.add_blackboard_data("s_check_failed_counter", 0)
 
     while not keyboard.is_pressed("p"):
         RoboFSM.process()
@@ -104,8 +106,14 @@ def init_process_action(self: State):
         ai_detector_init(model_path=model_path, label_info_=obj_label_info)
         self.fsm.trigger_event(init_finished_event)
     else:
-        print("***自检失败，程序退出***")
-        exit(0)
+        s_check_failed_counter = self.fsm.get_blackboard_data("s_check_failed_counter")
+        if s_check_failed_counter < 3:
+            s_check_failed_counter += 1
+            self.fsm.add_blackboard_data("s_check_failed_counter", s_check_failed_counter)
+            print(f"***自检失败，重试 {s_check_failed_counter}***")
+        else:
+            print("***自检失败，退出***")
+            exit(0)
 
 
 def idle_process_action(self: State):
@@ -116,8 +124,9 @@ def idle_process_action(self: State):
 def listen_target_process_action(self: State):
 
     voice_command_queue = self.fsm.get_blackboard_data("voice_command_queue")
+    no_cmd_counter = self.fsm.get_blackboard_data("no_cmd_counter")
     robot_gpt = RobotGPT()
-    tts_model = GPTSoVits("http://172.25.96.166:9880/tts/")
+    tts_model = GPTSoVits("http://172.25.106.21:9880/tts/")
 
     voice_command = get_voice_result()
     # 尝试监听三次语音指令，如果三次都没有获取到，则进入自动游走状态
@@ -125,30 +134,30 @@ def listen_target_process_action(self: State):
     while not voice_command and count < 2:
         voice_command = get_voice_result()
         count += 1
-
-    if not voice_command:
-        self.fsm.trigger_event(target_listen_nothing_event)
-        return 
     
     # print("Voice command is : ", voice_command)
+    #no_cmd_count = 0
     user_said_content = voice_command["content"]
     if user_said_content:
         text_type_result = robot_gpt.get_command(user_said_content)
         tts_text = text_type_result["content"]
-        user_said_content_type = text_type_result["command"]
+        user_said_content_type = text_type_result["command"]  
+        # TTS 过程
+        tts_model.run(tts_text)
+        self.fsm.add_blackboard_data("no_cmd_counter", 0)
     else:
-        tts_text = "Sorry but I can't find that object for you."
+        no_cmd_counter += 1
         user_said_content_type = 1
-    
-    # TTS 过程
-    tts_model.run(tts_text)
+        self.fsm.add_blackboard_data("no_cmd_counter", no_cmd_counter)
+        if no_cmd_counter > 3:
+            self.fsm.add_blackboard_data("no_cmd_counter", 0)
+            self.fsm.trigger_event(target_listen_nothing_event)
+            return
     
     if user_said_content_type == 0:
         voice_command_queue.put(voice_command)
         self.fsm.trigger_event(target_listen_finished_event)
         return
-
-
 def process_target_process_action(self: State):
 
     voice_command_queue = self.fsm.get_blackboard_data("voice_command_queue")
@@ -163,7 +172,8 @@ def process_target_process_action(self: State):
     delta_x = 99999
     delta_y = 99999
 
-    while delta_x > 0.03 or delta_y > 0.20:
+    first_time = True
+    while delta_x > 0.03 or delta_y > 0.45:
         # time.sleep(0.2)
         command_result = {}
         if not frame_queue.empty():  # yolo是否是多线程的？问题1，当前画面中没有目标，yolo会一直检测，导致队列不为空，导致程序卡死
@@ -186,13 +196,26 @@ def process_target_process_action(self: State):
                         command_result['angle'] / 
                         math.pi * 180
                     )
-                    delta_x, delta_y = result["position"]
                     # print("Command 0 被放入")
                     command_queue.put(command_result)
                     while command_queue.qsize() > 1:
                         command_queue.get()
-                    # 绝对不应期
-                    time.sleep(0.2)
+                    
+                    delta_x, delta_y = result["position"]
+                    if first_time and not voice_command["in_memory"]:
+                        first_time = False
+                        # 之后要实现未知物体入库
+                        insert_object(
+                            name=voice_command["object"],
+                            x=delta_x,
+                            y=delta_y,
+                            delta_x=0,
+                            delta_y=0,
+                            image=frame
+                        )
+                    
+                    time.sleep(0.3)
+                   # 绝对不应期
                     break
 
             if not detected_flag:
@@ -205,30 +228,21 @@ def process_target_process_action(self: State):
                 # 绝对不应期
                 #time.sleep(0.2)
 
+    print("***发送抓取指令***")
     command_result = {}
     command_result['command'] = COMMAND.GRAB.value
     command_queue.put(command_result)
-
-
-    while command_queue.qsize() > 1:
-        command_queue.get()
-
-    time.sleep(0.5)
-
-    command_result = {}
-    command_result['command'] = COMMAND.FIND_TAG.value
-    command_queue.put(command_result)
-
-    while command_queue.qsize() > 1:
-        command_queue.get()
     # 绝对不应期
-    time.sleep(0.2)
+    time.sleep(1)
     
     find_person = False
-    while not find_person and not frame_queue.empty():
+    while not find_person:
+        while frame_queue.empty():
+            pass
         frame = frame_queue.get()
         yolo_result_list = ai_detect(frame, debug=True)
         for result in yolo_result_list:
+            print("***开始找人***")
             if result["class_name"] == "person":
                 x1, y1, x2, y2 = result["xyxy"]
                 x_center = (x1 + x2) / 2
@@ -241,7 +255,7 @@ def process_target_process_action(self: State):
                     command_queue.put(command_result)
                     while command_queue.qsize() > 1:
                         command_queue.get()
-
+    print("***找到人了***")
     command_result['command'] = COMMAND.GOTO_TARGET.value
     command_result['distance'] = 0.5
     command_result['angle'] = 0
@@ -263,12 +277,24 @@ def process_target_process_action(self: State):
 
 
 def listen_for_voice_commands(voice_command_queue, stop_event : mtp.Event):
+    
+    robot_gpt = RobotGPT()
+    tts_model = GPTSoVits("http://172.25.106.21:9880/tts/")
+    
     while not stop_event.is_set():
-        print("Enter listen_for_voice_commands while loop")
         voice_command = get_voice_result()
-        if voice_command:
+        user_said_content = voice_command["content"]
+        if user_said_content:
+            text_type_result = robot_gpt.get_command(user_said_content)
+            tts_text = text_type_result["content"]
+            user_said_content_type = text_type_result["command"]  
+            # TTS 过程
+            tts_model.run(tts_text)
+        
+        if user_said_content_type == 0:
             voice_command_queue.put(voice_command)
             stop_event.set()
+            return
 
 def auto_walk_process_action(self: State):
     frame_queue = self.fsm.get_blackboard_data("frame_queue")

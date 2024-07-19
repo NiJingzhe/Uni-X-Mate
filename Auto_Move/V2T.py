@@ -4,6 +4,7 @@ from ObjectDB import ObjectDatabase
 
 speech2text = V2T()
 db = ObjectDatabase()
+db.createDB()
 
 def get_voice_result():
     result = speech2text.run()
@@ -26,3 +27,6 @@ def get_voice_result():
                 return result_dict
     else:
         return {"object" : None, "in_memory" : False, "content" : None}
+    
+def insert_object(name, x, y, delta_x, delta_y, image):
+    return db.insertObject(name, x, y, delta_x, delta_y, image)
